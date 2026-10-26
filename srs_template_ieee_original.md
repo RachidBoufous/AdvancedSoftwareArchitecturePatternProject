@@ -2,17 +2,19 @@
 
 ## for
 
-# &lt;Project&gt;
+# Event-Driven Order Processing System
 
-Version 1.0 approved
+Version 1.0
 
-Prepared by &lt;author&gt;
+Prepared by Rachid Boufous, 
 
-&lt;organization&gt;
+University of Debrecen
 
-&lt;date created&gt;
+Faculty: Faculty of Informatics
 
-Copyright © 1999 by Karl E. Wiegers. Permission is granted to use, modify, and distribute this document.
+Date: 26 October 2026
+
+
 
 ## Table of Contents
 
