@@ -1752,15 +1752,506 @@ The deployment must demonstrate that the application components can be operated 
 
 ## 5.1 Performance Requirements
 
-&lt;If there are performance requirements for the product under various circumstances, state them here and explain their rationale, to help the developers understand the intent and make suitable design choices. Specify the timing relationships for real time systems. Make such requirements as specific as possible. You may need to state performance requirements for individual functional requirements or features.&gt;
+The Event-Driven Order Processing System must provide acceptable responsiveness and processing performance under workloads appropriate for an educational distributed application.
+
+The system uses asynchronous event communication to allow order requests to be acknowledged without waiting for downstream payment, inventory, and notification operations to finish.
+
+Performance requirements focus on order-creation response time, end-to-end processing latency, throughput, and resource utilization.
+
+The quantitative thresholds defined below are proposed acceptance targets. They will be validated and, if necessary, revised after the target virtual machine and Kubernetes environment have been configured.
+
+### 5.1.1 Order Creation Response Time
+
+The Order Service must acknowledge valid order-creation requests without waiting for downstream payment, inventory, and notification processing.
+
+**NFR-01:** Under a workload of 10 concurrent clients, at least 95% of valid order-creation requests SHOULD receive a response within 1 second.
+
+**NFR-02:** The duration of the order-creation request MUST NOT depend on the completion of downstream payment, inventory, or notification operations.
+
+**NFR-03:** The system MUST NOT report an order as successfully accepted unless the required order-acceptance and reliable event-publication conditions have been satisfied.
+
+### 5.1.2 End-to-End Processing Latency
+
+The system should complete the successful order-processing workflow within a reasonable period when all required components are operational.
+
+**NFR-04:** Under a healthy deployment and a test workload of 10 concurrent clients, at least 95% of successfully processed orders SHOULD complete the simulated payment, inventory, and notification workflow within 10 seconds.
+
+**NFR-05:** End-to-end processing latency SHOULD be measured from successful order acceptance until the corresponding simulated notification has been recorded.
+
+These targets exclude intentionally simulated service outages and externally introduced processing delays.
+
+### 5.1.3 System Throughput
+
+The system should be capable of processing multiple order requests without requiring sequential completion of each order's downstream workflow.
+
+**NFR-06:** The system SHOULD support at least 10 concurrent order-submission clients under the defined performance-test environment.
+
+**NFR-07:** The system SHOULD process a test batch of 100 valid orders without losing accepted orders or incorrectly duplicating business operations.
+
+**NFR-08:** The achieved order-processing throughput MUST be measured and documented during performance testing.
+
+The final sustained throughput target will be determined after evaluating the available virtual machine resources.
+
+### 5.1.4 Scalability Performance
+
+The system architecture must allow application services to be scaled independently according to their workloads.
+
+**NFR-09:** Increasing the replica count of an application microservice MUST NOT require redeploying unrelated microservices.
+
+**NFR-10:** The system SHOULD demonstrate that appropriately configured additional consumer instances can share event-processing workloads.
+
+**NFR-11:** Scalability testing MUST account for Kafka topic partitions, consumer groups, and available infrastructure resources.
+
+### 5.1.5 Resource Utilization
+
+The application must operate within the computing resources available on the selected virtual machine.
+
+**NFR-12:** The deployed system MUST operate within the allocated CPU, memory, and storage resources of the virtual machine.
+
+**NFR-13:** Performance testing SHOULD record CPU and memory utilization for the application workloads.
+
+**NFR-14:** The system SHOULD remain operational under the defined test workload without resource-exhaustion failures.
+
+Exact resource limits will be established after the virtual machine specifications and deployment configuration have been finalized.
+
+### 5.1.6 Performance Verification
+
+The development team will conduct performance tests to evaluate the defined requirements.
+
+The tests will measure:
+
+- HTTP order-creation response times.
+- End-to-end processing latency.
+- Number of successfully processed orders.
+- Number of failed or incomplete operations.
+- Order-processing throughput.
+- Resource utilization.
+- Effects of changing application replica counts.
+
+Performance-test results will be documented in the final project report.
+
+The report will distinguish between the specified performance targets and the actual measurements obtained from the deployed system.
+
 
 ## 5.2 Safety Requirements
 
-&lt;Specify those requirements that are concerned with possible loss, damage, or harm that could result from the use of the product. Define any safeguards or actions that must be taken, as well as actions that must be prevented. Refer to any external policies or regulations that state safety issues that affect the product’s design or use. Define any safety certifications that must be satisfied.&gt;
+**Not Applicable (N/A) — Physical Safety Requirements.**
+
+The Event-Driven Order Processing System is a software-based educational prototype and does not interact with physical machinery, medical equipment, industrial control systems, or other safety-critical hardware.
+
+Consequently, the system does not introduce direct physical safety risks and does not require specialized safety mechanisms, emergency shutdown procedures, or safety certifications.
+
+However, the following operational safeguards must be considered to prevent unintended consequences during development and demonstration:
+
+| ID | Safety-Related Requirement | Priority |
+|----|----------------------------|----------|
+| NFR-15 | The system MUST use simulated payment operations and MUST NOT initiate real financial transactions. | High |
+| NFR-16 | The system MUST NOT require or store real payment-card information. | High |
+| NFR-17 | The system MUST NOT represent unsuccessful payment or inventory operations as successfully completed. | High |
+| NFR-18 | The system MUST prevent duplicate event processing from causing unintended repeated business operations. | High |
+| NFR-19 | The system SHOULD provide appropriate diagnostic information for investigating processing failures. | Medium |
+
+These safeguards are intended to protect the integrity of the simulated order-processing workflow rather than address physical safety hazards.
+
+Detailed requirements concerning data integrity, failure recovery, and communication security are addressed in Sections 4.6 and 5.3.
+
+No additional industry-specific physical safety standards or certifications are required for the current project scope.
 
 ## 5.3 Security Requirements
 
-&lt;Specify any requirements regarding security or privacy issues surrounding use of the product or protection of the data used or created by the product. Define any user identity authentication requirements. Refer to any external policies or regulations containing security issues that affect the product. Define any security or privacy certifications that must be satisfied.&gt;
+The Event-Driven Order Processing System must implement appropriate security measures to protect application interfaces, configuration data, and internal communication infrastructure.
+
+Although the application is an educational prototype and does not process real financial transactions, basic security requirements remain necessary to prevent unauthorized access, invalid operations, and accidental exposure of sensitive information.
+
+### 5.3.1 API Input Validation
+
+All incoming HTTP requests must be validated before the requested operation is performed.
+
+| ID | Security Requirement | Priority |
+|----|----------------------|----------|
+| NFR-20 | The system MUST validate required fields and data types in incoming order requests. | High |
+| NFR-21 | The system MUST reject malformed requests and invalid order values before creating an order. | High |
+| NFR-22 | The system MUST provide appropriate error responses without exposing internal stack traces or sensitive configuration information. | High |
+| NFR-23 | The system MUST handle unexpected request data without causing uncontrolled application failures. | High |
+
+### 5.3.2 Authentication and Authorization
+
+The initial implementation is intended for controlled academic demonstration and does not require customer registration or account management.
+
+The following requirements apply:
+
+| ID | Security Requirement | Priority |
+|----|----------------------|----------|
+| NFR-24 | The application MUST restrict access to internal infrastructure and administrative interfaces to authorized operators. | High |
+| NFR-25 | The system MUST NOT expose Kafka or database administration interfaces publicly without appropriate access controls. | High |
+| NFR-26 | If the application is made publicly accessible, the deployment MUST provide suitable access controls for operations requiring protection. | High |
+| NFR-27 | The system SHOULD support future integration of API authentication without requiring major changes to the internal event-driven processing architecture. | Low |
+
+A complete customer authentication system, including user registration, login, and role-based account management, is outside the current project scope.
+
+### 5.3.3 Configuration and Credential Protection
+
+The application requires environment-specific configuration for connecting to Apache Kafka, databases, and other infrastructure components.
+
+| ID | Security Requirement | Priority |
+|----|----------------------|----------|
+| NFR-28 | Sensitive configuration values and credentials MUST NOT be hard-coded into application source code. | High |
+| NFR-29 | Sensitive values MUST NOT be committed to the project's public Git repository. | High |
+| NFR-30 | The Kubernetes deployment MUST provide a mechanism for securely supplying application credentials. | High |
+| NFR-31 | The system MUST avoid exposing credentials or sensitive configuration values through application logs and API responses. | High |
+
+Kubernetes Secrets or an equivalent supported mechanism may be used for sensitive deployment configuration.
+
+### 5.3.4 Network and Communication Security
+
+The application uses HTTP for external client requests and Apache Kafka for internal event communication.
+
+| ID | Security Requirement | Priority |
+|----|----------------------|----------|
+| NFR-32 | The deployment MUST expose only the network interfaces required for application operation and testing. | High |
+| NFR-33 | Internal infrastructure services SHOULD remain accessible only through the appropriate private or cluster network. | Medium |
+| NFR-34 | The application MUST use HTTPS when its API is exposed over an untrusted public network. | High |
+| NFR-35 | Communication with Kafka and databases MUST use the security configuration required by the selected deployment environment. | High |
+| NFR-36 | The deployment SHOULD support network-level restrictions between components where appropriate. | Medium |
+
+### 5.3.5 Data Protection and Logging
+
+The system processes simulated order information and does not require real customer payment credentials.
+
+| ID | Security Requirement | Priority |
+|----|----------------------|----------|
+| NFR-37 | The system MUST NOT store real payment-card information. | High |
+| NFR-38 | Application logs MUST NOT contain passwords, authentication tokens, or other sensitive credentials. | High |
+| NFR-39 | The system SHOULD limit stored order information to the data required for the educational demonstration. | Medium |
+| NFR-40 | The system SHOULD provide sufficient diagnostic logging to investigate security-related errors without exposing sensitive information. | Medium |
+
+### 5.3.6 Security Scope and Limitations
+
+The system is intended for academic demonstration rather than production deployment.
+
+The following capabilities are outside the initial project scope:
+
+- Customer registration and account management.
+- Integration with third-party identity providers.
+- Real payment-card processing.
+- Production-grade fraud detection.
+- Enterprise identity and access management.
+- Formal payment-processing security certification.
+
+If the system is later extended for real-world commercial use, its security and privacy requirements must be reviewed and expanded accordingly.
+
+## 5.4 Software Quality Attributes
+
+The Event-Driven Order Processing System is designed to demonstrate the quality attributes associated with Microservices Architecture and Event-Driven Architecture.
+
+The primary quality attributes are **responsiveness, fault isolation, scalability, and modifiability**. Additional attributes, including reliability, maintainability, portability, and testability, are also considered.
+
+The following requirements define the expected quality characteristics of the system and the criteria used to evaluate them.
+
+### 5.4.1 Responsiveness
+
+Responsiveness describes the system's ability to acknowledge client requests without unnecessarily waiting for downstream processing operations.
+
+The asynchronous architecture separates order acceptance from payment processing, inventory updates, and customer notifications.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-41 | The Order Service MUST acknowledge accepted orders without waiting for downstream business operations to complete. | High |
+| NFR-42 | The system SHOULD satisfy the order-creation response-time target specified in Section 5.1. | High |
+| NFR-43 | Temporary delays in the Notification Service MUST NOT directly increase the time required to complete an otherwise healthy order-acceptance operation. | High |
+
+**Verification:** Measure order-creation response times under normal operation and while selected downstream consumers are delayed or unavailable.
+
+### 5.4.2 Fault Isolation
+
+Fault isolation describes the ability of the system to limit the impact of failures in individual components.
+
+Because the application consists of independent microservices, the failure of one downstream service should not directly terminate unrelated services.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-44 | A temporary failure of the Notification Service MUST NOT prevent otherwise healthy Order, Payment, and Inventory services from performing their responsibilities. | High |
+| NFR-45 | A temporary failure of the Inventory Service MUST NOT prevent the Order Service from accepting valid orders while its required dependencies remain available. | High |
+| NFR-46 | The system MUST support recovery of eligible unprocessed events after a temporarily unavailable consumer is restored. | High |
+| NFR-47 | The system SHOULD allow individual application workloads to be restarted without requiring simultaneous restarts of unrelated microservices. | High |
+
+**Verification:** Deliberately stop selected consumer services, submit test orders, restore the services, and inspect processing results.
+
+These requirements assume that the Kafka broker and other necessary dependencies remain operational.
+
+### 5.4.3 Scalability
+
+Scalability describes the system's ability to accommodate increased processing demand through changes to its available processing resources.
+
+The microservices architecture allows individual application components to be scaled independently.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-48 | The system MUST support independent Kubernetes replica configuration for appropriately designed application microservices. | High |
+| NFR-49 | Increasing the replica count of one microservice MUST NOT require changing the replica counts of unrelated services. | High |
+| NFR-50 | Kafka consumers SHOULD support parallel event processing when the topic-partition and consumer-group configuration permits it. | Medium |
+| NFR-51 | The system SHOULD demonstrate the effect of changing consumer replica counts on processing throughput under a defined workload. | Medium |
+
+**Verification:** Compare processing throughput and resource utilization before and after changing the replica count of a selected microservice.
+
+Actual performance improvements are dependent on available hardware resources, Kafka partitioning, and workload characteristics.
+
+### 5.4.4 Modifiability
+
+Modifiability describes the ability to introduce changes or additional functionality without requiring extensive modifications to unrelated components.
+
+The use of asynchronous events reduces direct dependencies between event producers and consumers.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-52 | Microservices MUST maintain clearly separated business responsibilities. | High |
+| NFR-53 | The system SHOULD allow new event consumers to subscribe to existing Kafka topics without requiring changes to the corresponding event producers, provided the existing event contracts contain sufficient information. | Medium |
+| NFR-54 | Changes to the internal implementation of one service SHOULD NOT require changes to unrelated services when published interface contracts remain compatible. | Medium |
+| NFR-55 | Event message contracts SHOULD support documented, compatible evolution. | Medium |
+
+**Verification:** Introduce a simple additional event consumer, such as an Analytics consumer, and verify that existing producers and consumers continue operating without source-code modifications.
+
+The additional consumer may be implemented solely for architectural evaluation.
+
+### 5.4.5 Reliability
+
+Reliability describes the ability of the system to process events correctly and recover from temporary failures.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-56 | The system MUST prevent duplicate event delivery from causing repeated logical payment or inventory operations. | High |
+| NFR-57 | The system MUST provide a defined recovery mechanism for accepted orders whose event publication or processing is interrupted. | High |
+| NFR-58 | The system MUST distinguish successfully completed operations from unsuccessful or incomplete operations. | High |
+| NFR-59 | The system SHOULD support recovery of processing after temporary application-container failures. | Medium |
+
+**Verification:** Test event redelivery, service restarts, and temporary processing failures. Compare accepted orders with recorded processing outcomes.
+
+### 5.4.6 Maintainability
+
+Maintainability describes the ease with which developers can understand, modify, and troubleshoot the application.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-60 | Each microservice MUST have a clearly defined responsibility and separately maintainable application code. | High |
+| NFR-61 | The application MUST provide logs that allow developers to identify relevant order-processing operations and failures. | High |
+| NFR-62 | Environment-specific configuration SHOULD be separated from application business logic. | Medium |
+| NFR-63 | The project SHOULD maintain documentation describing service responsibilities, event contracts, and deployment configuration. | Medium |
+
+**Verification:** Review the application structure, configuration, logs, and technical documentation.
+
+### 5.4.7 Portability
+
+Portability describes the ability of the application to operate consistently across compatible development and deployment environments.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-64 | The application MUST be packageable as container images suitable for the selected Kubernetes environment. | High |
+| NFR-65 | The application MUST support environment-specific configuration without requiring changes to its business logic. | High |
+| NFR-66 | The application SHOULD support reproducible deployment using documented configuration files and instructions. | Medium |
+
+**Verification:** Build the container images and deploy the application in the target virtual machine environment.
+
+### 5.4.8 Testability
+
+Testability describes the ability to verify the system's behavior through controlled and repeatable tests.
+
+| ID | Quality Requirement | Priority |
+|----|---------------------|----------|
+| NFR-67 | The system MUST support testing of the complete successful order-processing workflow. | High |
+| NFR-68 | The system MUST support controlled simulation of unsuccessful payment and inventory operations. | High |
+| NFR-69 | The system SHOULD support repeatable tests for service failures, event redelivery, and processing recovery. | Medium |
+| NFR-70 | The system SHOULD provide sufficient logs and observable processing outcomes to evaluate the results of integration tests. | Medium |
+
+**Verification:** Execute documented functional and integration test scenarios and compare actual results with the expected behavior.
+
+### 5.4.9 Quality Attribute Priorities
+
+The following table summarizes the relative importance of the quality attributes.
+
+| Quality Attribute | Priority | Main Architectural Contribution |
+|-------------------|----------|---------------------------------|
+| Responsiveness | High | Asynchronous order processing |
+| Fault Isolation | High | Independent services and event-based communication |
+| Scalability | High | Independent service deployment and consumer scaling |
+| Modifiability | High | Loose coupling through event contracts |
+| Reliability | High | Idempotency, error handling, and recovery |
+| Maintainability | Medium | Separation of responsibilities |
+| Portability | Medium | Containerization and Kubernetes deployment |
+| Testability | High | Observable and repeatable test scenarios |
+
+These quality attributes will be evaluated through implementation reviews, functional tests, integration tests, and controlled deployment experiments.
+
+The results will be documented in the final project report.
+
+
+## 5.5 Business Rules
+
+The Event-Driven Order Processing System follows a set of business rules that govern the creation and processing of customer orders.
+
+These rules define the conditions under which orders may proceed through payment processing, inventory updates, and customer notification.
+
+Although the system uses simulated business operations, the rules are designed to represent a simplified online ordering workflow.
+
+### 5.5.1 Order Creation Rules
+
+| ID | Business Rule |
+|----|---------------|
+| BR-01 | An order may be accepted only when all required order information is present and valid. |
+| BR-02 | Every accepted order must be assigned a unique identifier. |
+| BR-03 | An accepted order must initially be represented as awaiting processing until the required downstream operations have been completed. |
+| BR-04 | Invalid or rejected order requests must not initiate payment processing. |
+| BR-05 | An order must contain a positive quantity of the requested product. |
+
+The exact price-validation rules will be finalized during implementation design.
+
+### 5.5.2 Payment Processing Rules
+
+| ID | Business Rule |
+|----|---------------|
+| BR-06 | Payment processing may begin only for a valid, accepted order. |
+| BR-07 | An order may proceed to inventory processing only after payment has been approved. |
+| BR-08 | An unsuccessful payment must prevent the order from proceeding through the normal successful-processing workflow. |
+| BR-09 | A logical payment operation must not be completed more than once for the same order-processing attempt. |
+| BR-10 | All payment operations are simulated and must not initiate real financial transactions. |
+
+### 5.5.3 Inventory Processing Rules
+
+| ID | Business Rule |
+|----|---------------|
+| BR-11 | Inventory processing may proceed only after successful payment approval. |
+| BR-12 | An inventory operation may succeed only when sufficient stock is available for the requested quantity. |
+| BR-13 | A successful inventory operation must reduce the available stock by the quantity allocated to the order. |
+| BR-14 | Available stock must not become negative as a result of processing an order. |
+| BR-15 | The same logical inventory operation must not deduct stock more than once. |
+| BR-16 | An unsuccessful inventory operation must prevent the order from being marked as successfully confirmed. |
+
+### 5.5.4 Customer Notification Rules
+
+| ID | Business Rule |
+|----|---------------|
+| BR-17 | A successful order confirmation may be generated only after the required payment and inventory operations have completed successfully. |
+| BR-18 | Each successful logical notification operation must be associated with the correct order identifier. |
+| BR-19 | Duplicate delivery of the same event must not produce additional logical confirmations for the same notification operation. |
+| BR-20 | A temporary notification failure must not invalidate payment and inventory operations that have already completed successfully. |
+
+### 5.5.5 Order Status Rules
+
+| ID | Business Rule |
+|----|---------------|
+| BR-21 | An accepted order must not be represented as fully processed while required business operations remain incomplete. |
+| BR-22 | An order may be marked as `CONFIRMED` only after the required payment and inventory operations have completed successfully. |
+| BR-23 | An order with an unsuccessful payment or unresolved inventory failure must not be marked as `CONFIRMED`. |
+| BR-24 | Repeated or delayed processing events must not cause an order to transition incorrectly from a completed state to an earlier processing state. |
+| BR-25 | Order-status changes must be associated with the correct order identifier. |
+
+### 5.5.6 Cancellation and Compensation Rules
+
+| ID | Business Rule |
+|----|---------------|
+| BR-26 | An order that cannot complete its required processing stages must be represented using an appropriate failure or cancellation outcome. |
+| BR-27 | If inventory processing fails after payment approval, the system must identify the order as requiring an appropriate resolution. |
+| BR-28 | If a compensation mechanism is implemented, it must not reverse the same logical business operation more than once. |
+| BR-29 | A failed or cancelled order must not be represented as successfully completed unless an explicitly defined recovery process changes its outcome. |
+
+The exact compensation workflow, including simulated payment refunds and cancellation events, remains to be determined.
+
+### 5.5.7 Business Rules Summary
+
+The successful order-processing workflow follows this logical sequence:
+
+1. A valid order is accepted.
+2. The simulated payment is approved.
+3. Sufficient inventory is verified.
+4. The inventory operation completes successfully.
+5. The order becomes eligible for confirmation.
+6. A simulated customer confirmation is generated.
+
+If a required business operation fails, the order must not continue through the normal successful-processing path.
+
+These business rules are implemented through the functional requirements defined in Chapter 4 and are independent of the specific technologies used to implement the application.
+
+
+## 5.1 Performance Requirements
+
+The Event-Driven Order Processing System must provide acceptable responsiveness and processing performance under workloads appropriate for an educational distributed application.
+
+The system uses asynchronous event communication to allow order requests to be acknowledged without waiting for downstream payment, inventory, and notification operations to finish.
+
+Performance requirements focus on order-creation response time, end-to-end processing latency, throughput, and resource utilization.
+
+The quantitative thresholds defined below are proposed acceptance targets. They will be validated and, if necessary, revised after the target virtual machine and Kubernetes environment have been configured.
+
+### 5.1.1 Order Creation Response Time
+
+The Order Service must acknowledge valid order-creation requests without waiting for downstream payment, inventory, and notification processing.
+
+**NFR-01:** Under a workload of 10 concurrent clients, at least 95% of valid order-creation requests SHOULD receive a response within 1 second.
+
+**NFR-02:** The duration of the order-creation request MUST NOT depend on the completion of downstream payment, inventory, or notification operations.
+
+**NFR-03:** The system MUST NOT report an order as successfully accepted unless the required order-acceptance and reliable event-publication conditions have been satisfied.
+
+### 5.1.2 End-to-End Processing Latency
+
+The system should complete the successful order-processing workflow within a reasonable period when all required components are operational.
+
+**NFR-04:** Under a healthy deployment and a test workload of 10 concurrent clients, at least 95% of successfully processed orders SHOULD complete the simulated payment, inventory, and notification workflow within 10 seconds.
+
+**NFR-05:** End-to-end processing latency SHOULD be measured from successful order acceptance until the corresponding simulated notification has been recorded.
+
+These targets exclude intentionally simulated service outages and externally introduced processing delays.
+
+### 5.1.3 System Throughput
+
+The system should be capable of processing multiple order requests without requiring sequential completion of each order's downstream workflow.
+
+**NFR-06:** The system SHOULD support at least 10 concurrent order-submission clients under the defined performance-test environment.
+
+**NFR-07:** The system SHOULD process a test batch of 100 valid orders without losing accepted orders or incorrectly duplicating business operations.
+
+**NFR-08:** The achieved order-processing throughput MUST be measured and documented during performance testing.
+
+The final sustained throughput target will be determined after evaluating the available virtual machine resources.
+
+### 5.1.4 Scalability Performance
+
+The system architecture must allow application services to be scaled independently according to their workloads.
+
+**NFR-09:** Increasing the replica count of an application microservice MUST NOT require redeploying unrelated microservices.
+
+**NFR-10:** The system SHOULD demonstrate that appropriately configured additional consumer instances can share event-processing workloads.
+
+**NFR-11:** Scalability testing MUST account for Kafka topic partitions, consumer groups, and available infrastructure resources.
+
+### 5.1.5 Resource Utilization
+
+The application must operate within the computing resources available on the selected virtual machine.
+
+**NFR-12:** The deployed system MUST operate within the allocated CPU, memory, and storage resources of the virtual machine.
+
+**NFR-13:** Performance testing SHOULD record CPU and memory utilization for the application workloads.
+
+**NFR-14:** The system SHOULD remain operational under the defined test workload without resource-exhaustion failures.
+
+Exact resource limits will be established after the virtual machine specifications and deployment configuration have been finalized.
+
+### 5.1.6 Performance Verification
+
+The development team will conduct performance tests to evaluate the defined requirements.
+
+The tests will measure:
+
+- HTTP order-creation response times.
+- End-to-end processing latency.
+- Number of successfully processed orders.
+- Number of failed or incomplete operations.
+- Order-processing throughput.
+- Resource utilization.
+- Effects of changing application replica counts.
+
+Performance-test results will be documented in the final project report.
+
+The report will distinguish between the specified performance targets and the actual measurements obtained from the deployed system.
 
 ## 5.4 Software Quality Attributes
 
@@ -1772,11 +2263,175 @@ The deployment must demonstrate that the application components can be operated 
 
 # 6. Other Requirements
 
-&lt;Define any other requirements not covered elsewhere in the SRS. This might include database requirements, internationalization requirements, legal requirements, reuse objectives for the project, and so on. Add any new sections that are pertinent to the project.&gt;
+This chapter defines additional requirements and considerations that are not fully addressed in the preceding sections of the Software Requirements Specification.
+
+These requirements concern data persistence, event compatibility, configuration management, software reuse, and project deliverables.
+
+## 6.1 Database and Data Persistence
+
+The Event-Driven Order Processing System requires data storage to maintain information associated with order processing.
+
+The reference implementation uses an H2 in-memory database within the Order Service.
+
+For the extended implementation, the following requirements apply:
+
+- The system must provide a database for storing accepted orders.
+- Each stored order must have a unique identifier.
+- Order information must be retrievable using its identifier.
+- The database must support updates to order-processing information where required.
+- Data-storage operations must preserve the consistency of the information owned by each service.
+- The system must define how application data is preserved or recovered following service restarts.
+
+If persistent inventory or payment records are introduced, their ownership and storage mechanisms must be clearly defined.
+
+The final database technology, persistence strategy, and storage configuration remain **To Be Determined (TBD)**.
+
+## 6.2 Event Data and Schema Compatibility
+
+The system relies on Apache Kafka events for communication between microservices.
+
+To maintain interoperability, the following requirements apply:
+
+- Every event type must have a documented message structure.
+- Events must contain sufficient information to identify the associated order.
+- Event producers and consumers must use compatible data representations.
+- Changes to event structures must be evaluated for compatibility with existing consumers.
+- The system should support an event-versioning strategy when message structures evolve.
+- Event consumers must handle invalid or unsupported message structures according to a defined error-handling policy.
+
+The final event schemas, serialization configuration, and versioning approach will be established during implementation design.
+
+## 6.3 Configuration Management
+
+The application must support configuration differences between local development and Kubernetes deployment environments.
+
+The following requirements apply:
+
+- Environment-specific configuration must be separated from core application business logic.
+- Kafka broker addresses must be configurable.
+- Database connection settings must be configurable.
+- Application service ports and relevant runtime settings must be configurable.
+- Sensitive configuration values must be managed according to the security requirements defined in Section 5.3.
+- Configuration files required for reproducing the deployment must be included in the project deliverables, excluding sensitive credentials.
+
+## 6.4 Data Retention and Recovery
+
+The system must define how order information and processing events are retained.
+
+The following considerations apply:
+
+- Accepted order records must remain available for the period required by the demonstration and testing scenarios.
+- Kafka event retention must be configured to support the selected recovery scenarios.
+- Temporary consumer unavailability must not automatically result in loss of eligible events that remain within the configured retention period.
+- Data required for persistent recovery must not depend exclusively on the lifetime of individual application containers.
+- The final retention periods and recovery procedures will be determined based on the selected infrastructure and project requirements.
+
+## 6.5 Software Reuse and Licensing
+
+The project builds upon an existing open-source reference implementation.
+
+The development team must:
+
+- Identify and acknowledge the original reference repository.
+- Review the repository's applicable license and reuse permissions before modifying or redistributing its source code.
+- Preserve copyright notices and attribution required by applicable licenses.
+- Document significant modifications introduced during the project.
+- Ensure that third-party libraries and tools are used according to their applicable licensing conditions.
+
+The reference repository and other external resources are identified in Section 1.5 — References.
+
+## 6.6 Internationalization and Localization
+
+**Not Applicable (N/A) — Multilingual User Interface Requirements.**
+
+The current project does not include a dedicated graphical user interface or multilingual customer-facing application.
+
+The HTTP API, source code, documentation, and simulated notifications will use English.
+
+Additional language support is outside the current project scope.
+
+## 6.7 Legal and Regulatory Requirements
+
+The system is intended exclusively for academic demonstration.
+
+It does not process real financial transactions or require actual customer payment-card information.
+
+Therefore, regulatory requirements associated specifically with real payment processing are not applicable to the current prototype.
+
+The development team must nevertheless respect applicable software licensing obligations and avoid using unnecessary real personal or financial data during testing.
+
+If the application is extended for commercial use, additional legal, privacy, and regulatory requirements must be evaluated.
+
+## 6.8 Project Deliverables
+
+The completed project will include:
+
+1. Application source code for the four primary microservices.
+2. Configuration required for Apache Kafka communication.
+3. Container image build definitions.
+4. Kubernetes deployment configuration.
+5. Database configuration and initialization resources, where applicable.
+6. Software Requirements Specification (SRS).
+7. Architecture documentation and relevant Architecture Decision Records.
+8. Instructions for building, deploying, and running the application.
+9. Test scenarios and verification results.
+10. A final technical report describing the architecture, implementation, deployment, architectural trade-offs, and evaluation results.
+
+The final deliverables must enable the course instructor to understand the system architecture and reproduce the demonstrated order-processing workflow using the documented deployment procedure.
 
 # Appendix A: Glossary
 
-&lt;Define all the terms necessary to properly interpret the SRS, including acronyms and abbreviations. You may wish to build a separate glossary that spans multiple projects or the entire organization, and just include terms specific to a single project in each SRS.&gt;
+This appendix defines the technical terms, abbreviations, and concepts used throughout the Software Requirements Specification for the Event-Driven Order Processing System.
+
+| Term / Abbreviation | Definition |
+|---------------------|------------|
+| **SRS** | Software Requirements Specification. A document describing the functional and non-functional requirements of a software system. |
+| **Microservices Architecture** | An architectural style in which an application is divided into independently deployable services, each responsible for a specific business capability. |
+| **EDA** | Event-Driven Architecture. An architectural approach in which components communicate and react to events representing changes or outcomes within a system. |
+| **Event** | A message representing something that has occurred within the system, such as the creation of an order or approval of a payment. |
+| **Event Producer** | A component that creates and publishes events to a messaging infrastructure. |
+| **Event Consumer** | A component that receives and processes events published by other components. |
+| **Apache Kafka** | A distributed event-streaming platform used to publish, store, and consume event records. |
+| **Kafka Topic** | A named stream of records within Apache Kafka to which producers publish messages and from which consumers read messages. |
+| **Kafka Partition** | An ordered subdivision of a Kafka topic that enables distributed storage and parallel processing. |
+| **Consumer Group** | A group of Kafka consumers that coordinate to distribute the processing of topic partitions among its members. |
+| **Asynchronous Communication** | A communication mechanism in which a sender does not need to wait for the receiving component to complete its operation before continuing. |
+| **Synchronous Communication** | A communication mechanism in which a caller waits for a response from another component before continuing the dependent operation. |
+| **Eventual Consistency** | A consistency model in which different components may temporarily hold different states but converge when the relevant updates have been successfully propagated and processed. |
+| **Fault Isolation** | The ability to limit the effects of a failure in one component so that unrelated components can continue operating. |
+| **Scalability** | The ability of a system to accommodate increased workloads by adjusting available processing resources. |
+| **Modifiability** | The ability to change or extend a system without requiring extensive modifications to unrelated components. |
+| **Idempotency** | A property of an operation whereby executing the same logical operation multiple times produces no additional intended business effects beyond the first successful execution. |
+| **Saga Pattern** | A pattern for coordinating distributed business transactions through multiple local operations and, when necessary, compensating actions. |
+| **Compensating Action** | An operation intended to semantically reverse or offset the effects of a previously completed business operation. |
+| **Transactional Outbox Pattern** | A pattern in which application data changes and outgoing event records are stored within the same local database transaction, enabling reliable subsequent event publication. |
+| **DLQ** | Dead-Letter Queue. A mechanism for isolating messages that cannot be processed successfully under the configured error-handling policy. In Kafka, this is commonly implemented using a dedicated topic. |
+| **REST** | Representational State Transfer. An architectural style commonly used when designing resource-oriented HTTP APIs. |
+| **HTTP** | Hypertext Transfer Protocol. An application-layer protocol used for communication between clients and servers. |
+| **API** | Application Programming Interface. A defined interface through which software components or external clients interact with a system. |
+| **JSON** | JavaScript Object Notation. A text-based format commonly used for exchanging structured data. |
+| **Spring Boot** | A Java-based framework used to develop and run standalone applications and microservices. |
+| **Docker** | A platform and tooling ecosystem used to build, package, and manage container images and containers. |
+| **Container** | An isolated application execution environment that shares the host operating system's kernel. |
+| **Kubernetes** | A container orchestration platform used to deploy, manage, network, and scale containerized applications. |
+| **Pod** | The smallest deployable computing unit in Kubernetes, containing one or more closely associated containers. |
+| **Kubernetes Service** | A Kubernetes resource that provides a stable network interface for accessing a set of application endpoints. |
+| **ConfigMap** | A Kubernetes resource used to store non-sensitive configuration data. |
+| **Kubernetes Secret** | A Kubernetes resource used to store and distribute sensitive configuration data, subject to the cluster's security configuration. |
+| **VM** | Virtual Machine. A software-defined computing environment that runs an operating system and applications using virtualized hardware resources. |
+| **H2 Database** | A Java-based relational database used by the reference implementation for in-memory order storage. |
+| **Maven** | A build automation and dependency management tool commonly used for Java projects. |
+| **Throughput** | The number of operations or requests a system successfully processes within a given period. |
+| **Latency** | The elapsed time between the start of an operation and the completion of a defined response or outcome. |
+| **Correlation ID** | An identifier used to associate related messages, events, and log entries belonging to the same processing workflow. |
+| **FR** | Functional Requirement. A requirement defining a specific behavior or capability the system must provide. |
+| **NFR** | Non-Functional Requirement. A requirement defining a quality characteristic, performance expectation, or operational constraint. |
+| **BR** | Business Rule. A rule defining the conditions and principles governing business operations. |
+| **TBD** | To Be Determined. Indicates information or decisions that have not yet been finalized. |
+| **N/A** | Not Applicable. Indicates that a particular requirement or section does not apply to the current project scope. |
+| **ADR** | Architecture Decision Record. A document describing an important architectural decision, its context, rationale, and consequences. |
+
+The terms defined in this glossary are used consistently throughout the SRS and supporting architecture documentation.
 
 # Appendix B: Analysis Models
 
