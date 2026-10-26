@@ -776,7 +776,68 @@ These unresolved items will be tracked in **Appendix C: To Be Determined List** 
 
 ## 3.1 User Interfaces
 
-&lt;Describe the logical characteristics of each interface between the software product and the users. This may include sample screen images, any GUI standards or product family style guides that are to be followed, screen layout constraints, standard buttons and functions (e.g., help) that will appear on every screen, keyboard shortcuts, error message display standards, and so on. Define the software components for which a user interface is needed. Details of the user interface design should be documented in a separate user interface specification.&gt;
+The Event-Driven Order Processing System is designed primarily as an API-based application and does not require a dedicated graphical user interface (GUI).
+
+Users interact with the application through an HTTP API exposed by the Order Service. The interface allows clients to submit orders and, in the proposed extended implementation, retrieve information about their processing status.
+
+The system's API can be accessed using HTTP clients such as Postman, cURL, or other applications capable of sending HTTP requests.
+
+### 3.1.1 Order Submission Interface
+
+The Order Service provides an HTTP endpoint through which clients can submit new orders.
+
+The interface accepts order information in JSON format, including:
+
+- Product identifier.
+- Order quantity.
+- Product price.
+
+When a valid order is accepted, the system returns an acknowledgement containing information that allows the client to identify the submitted order.
+
+The acknowledgement does not require all downstream operations, such as payment processing, inventory updates, and customer notification, to be completed.
+
+### 3.1.2 Order Status Interface
+
+The proposed system will provide an HTTP interface for retrieving the processing status of an existing order.
+
+Clients will be able to request information about an order using its unique identifier.
+
+The returned information will indicate the latest known processing state, allowing clients to distinguish between orders that have been accepted, are being processed, or have completed processing.
+
+The exact endpoint structure, response format, and supported status values will be defined in the functional and interface requirements.
+
+### 3.1.3 Error Handling and Feedback
+
+The HTTP interface must provide understandable responses when a request cannot be processed.
+
+The system must:
+
+- Reject requests containing invalid or missing required information.
+- Return appropriate HTTP status codes.
+- Provide error descriptions in a consistent JSON format.
+- Distinguish between successful order acceptance and unsuccessful requests.
+- Avoid exposing sensitive internal implementation details through error messages.
+
+### 3.1.4 Administrative and Development Interfaces
+
+Developers and system operators will interact with the application using development, testing, and infrastructure-management tools.
+
+These interfaces may include:
+
+- HTTP API testing tools for submitting requests and inspecting responses.
+- Application logs for observing order-processing events.
+- Docker tools for building and inspecting container images.
+- Kubernetes command-line tools for monitoring and managing deployed services.
+
+These tools are external utilities and are not custom graphical interfaces developed as part of the application.
+
+### 3.1.5 Graphical User Interface
+
+A dedicated graphical user interface is **Not Applicable (N/A)** to the current project scope.
+
+The system does not require customer registration screens, shopping-cart interfaces, administrative dashboards, or other graphical e-commerce components.
+
+Such interfaces may be developed in future versions without changing the main event-driven processing architecture.
 
 ## 3.2 Hardware Interfaces
 
