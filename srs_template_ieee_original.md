@@ -75,15 +75,144 @@ This specification covers the complete order-processing workflow, from order cre
 
 ## 1.2 Document Conventions
 
-&lt;Describe any standards or typographical conventions that were followed when writing this SRS, such as fonts or highlighting that have special significance. For example, state whether priorities for higher-level requirements are assumed to be inherited by detailed requirements, or whether every requirement statement is to have its own priority.&gt;
+This document follows the structure of the IEEE Software Requirements Specification (SRS) template provided for the Advanced Software Architecture Patterns course. Markdown formatting is used to organize sections, subsections, tables, and requirement descriptions.
+
+The following conventions are applied throughout the document:
+
+- **Functional Requirements (FR):** Identified using the format `FR-XX` (e.g., `FR-01`, `FR-02`). These describe the functions and behaviors the system must provide.
+- **Non-Functional Requirements (NFR):** Identified using the format `NFR-XX` (e.g., `NFR-01`, `NFR-02`). These describe system quality attributes, such as performance, reliability, security, and scalability.
+- **Business Rules (BR):** Identified using the format `BR-XX` (e.g., `BR-01`). These define conditions and constraints governing the order-processing workflow.
+- **MUST:** Indicates a mandatory requirement that must be satisfied by the completed system.
+- **SHOULD:** Indicates a recommended requirement that is desirable but not mandatory.
+- **TBD (To Be Determined):** Indicates information or decisions that have not yet been finalized.
+
+Requirements are assigned one of the following priority levels:
+
+| Priority | Description |
+|----------|-------------|
+| High | Essential functionality or constraints required for the system to operate correctly and satisfy the project's main objectives. |
+| Medium | Important functionality that improves system reliability, usability, or maintainability but is not essential to the basic workflow. |
+| Low | Optional enhancements that may be implemented if time and resources permit. |
+
+Each requirement is assigned a unique identifier to support traceability during implementation and testing. Requirement identifiers remain unchanged when the document is revised.
+
+Technical terms, such as *microservices*, *event-driven architecture*, and *Apache Kafka*, are used consistently throughout the document. Abbreviations and specialized terminology are defined in Appendix A: Glossary.
+
+Any sections that are not applicable to the project are retained and explicitly marked **Not Applicable (N/A)**, while unresolved requirements are marked **TBD**.
 
 ## 1.3 Intended Audience and Reading Suggestions
 
-&lt;Describe the different types of reader that the document is intended for, such as developers, project managers, marketing staff, users, testers, and documentation writers. Describe what the rest of this SRS contains and how it is organized. Suggest a sequence for reading the document, beginning with the overview sections and proceeding through the sections that are most pertinent to each reader type.&gt;
+This Software Requirements Specification is intended for the following audiences:
+- Course Instructor: To review the project's scope, functional and non-functional requirements, architectural constraints, and expected system behavior, and to evaluate whether the completed implementation satisfies the specified requirements.
+- Development Team: To understand the required system functionality, service responsibilities, communication mechanisms, and technical constraints during design and implementation.
+- Testers: To identify expected system behaviors and acceptance criteria, design test cases, and verify that functional and non-functional requirements are satisfied.
+- System Administrators and Operators: To understand the system's operating environment, deployment constraints, external interfaces, and reliability requirements when deploying and managing the application using Docker and Kubernetes.
+The document is organized into six main chapters and three appendices:
+- Chapter 1 – Introduction: Describes the document's purpose, conventions, intended audience, project scope, and references.
+- Chapter 2 – Overall Description: Provides an overview of the system, its major functions, users, operating environment, constraints, and dependencies.
+- Chapter 3 – External Interface Requirements: Defines the interfaces through which the system interacts with users, hardware, external software, and communication infrastructure.
+- Chapter 4 – System Features: Specifies the system's functional requirements, including order creation, payment processing, inventory updates, and customer notifications.
+- Chapter 5 – Other Nonfunctional Requirements: Defines performance, security, reliability, scalability, maintainability, and other quality requirements.
+- Chapter 6 – Other Requirements: Covers additional requirements not addressed in the preceding chapters.
+- Appendices: Provide definitions of technical terminology, supporting analysis models, and a list of unresolved decisions.
+Readers unfamiliar with the project are encouraged to begin with Chapters 1 and 2 to understand its objectives and overall functionality.
+
+Developers and testers should then focus on Chapters 3, 4, and 5, while system administrators and operators should pay particular attention to the operating environment, implementation constraints, communication interfaces, and deployment-related requirements.
 
 ## 1.4 Product Scope
 
-&lt;Provide a short description of the software being specified and its purpose, including relevant benefits, objectives, and goals. Relate the software to corporate goals or business strategies. If a separate vision and scope document is available, refer to it rather than duplicating its contents here.&gt;
+
+The Event-Driven Order Processing System is a distributed application designed to simulate and manage the main stages of an online order-processing workflow. The system handles order creation, payment processing, inventory updates, and customer notifications through independently deployable microservices.
+
+Problem Statement
+
+In a traditional synchronous order-processing system, different operations may be connected through a sequence of direct service-to-service requests. When a customer places an order, the system may need to wait for payment processing, inventory updates, and notification services to complete before returning a response.
+
+This approach can introduce several architectural problems:
+
+Blocking dependencies: Slow downstream operations can increase the overall response time.
+
+Tight coupling: Services depend directly on the availability and interfaces of other services.
+
+Limited fault isolation: A failure in one service can disrupt the entire order-processing workflow.
+
+Difficult scalability: Individual processing stages may be difficult to scale independently.
+
+Reduced modifiability: Adding new functionality may require changes to existing service interactions.
+
+Proposed Solution
+
+The proposed system addresses these problems by combining Microservices Architecture with Event-Driven Architecture (EDA).
+
+The application is divided into four main microservices:
+
+Order Service: Receives customer orders, stores order information, and publishes an order-created event.
+
+Payment Service: Consumes order-created events, simulates payment processing, and publishes payment-result events.
+
+Inventory Service: Processes successful payment events, performs inventory operations, and publishes inventory-update events.
+
+Notification Service: Consumes inventory-update events and generates customer confirmation notifications.
+
+Instead of directly invoking each other for business operations, the services communicate asynchronously through Apache Kafka, which acts as the event broker.
+
+This allows the Order Service to acknowledge an accepted order without waiting for all downstream operations to complete. Other services process the relevant events independently as they become available.
+
+Project Objectives
+
+The main objectives of the system are:
+
+Responsiveness: Reduce blocking dependencies by allowing order requests to be acknowledged before downstream processing finishes.
+
+Fault Isolation: Limit the impact of individual service failures on the rest of the order-processing system.
+
+Scalability: Enable individual microservices to be scaled independently according to their processing workload.
+
+Modifiability: Allow new event consumers or processing capabilities to be introduced with minimal changes to existing services.
+
+Reliability: Support consistent order processing and recovery from temporary service failures.
+
+Deployability: Package the application using Docker containers and deploy the microservices on a virtual machine using Kubernetes.
+
+Project Boundaries
+
+The project focuses on demonstrating the architectural behavior of a distributed, event-driven order-processing system.
+
+In Scope:
+
+Creation and basic validation of customer orders.
+
+Asynchronous communication using Apache Kafka.
+
+Simulated payment processing.
+
+Inventory processing and updates.
+
+Simulated customer notifications.
+
+Basic order status tracking.
+
+Containerization of application services using Docker.
+
+Deployment and management using Kubernetes.
+
+Testing of service communication, failure handling, and selected architectural quality attributes.
+
+Out of Scope:
+
+Integration with real banks or payment gateways.
+
+Processing actual financial transactions.
+
+Integration with commercial shipping or delivery providers.
+
+Implementation of a complete e-commerce storefront.
+
+Real-world customer billing and invoicing.
+
+Production-scale deployment across multiple cloud regions.
+
+The system is intended as an educational prototype for the Advanced Software Architecture Patterns course at the University of Debrecen. Its primary purpose is to demonstrate and evaluate architectural patterns rather than provide a production-ready e-commerce platform.
 
 ## 1.5 References
 
