@@ -14,7 +14,7 @@ Faculty: Faculty of Informatics
 
 Date: 26 October 2026
 
-
+Copyright © 1999 by Karl E. Wiegers. Permission is granted to use, modify, and distribute this document.
 
 ## Table of Contents
 
@@ -56,14 +56,22 @@ Date: 26 October 2026
 ## Revision History
 
 | Name | Date | Reason For Changes | Version |
-| --- | --- | --- | --- |
-| | | | |
+|------|------|--------------------|---------|
+| Rachid Boufous and Team | 26/10/2026 | Initial creation of the Software Requirements Specification | 1.0 (Draft) |
 
 # 1. Introduction
 
 ## 1.1 Purpose
 
-&lt;Identify the product whose software requirements are specified in this document, including the revision or release number. Describe the scope of the product that is covered by this SRS, particularly if this SRS describes only part of the system or a single subsystem.&gt;
+The purpose of this Software Requirements Specification (SRS) document is to define the functional and non-functional requirements of the Event-Driven Order Processing System, an application designed to demonstrate asynchronous order processing using Microservices and Event-Driven Architecture.
+
+The system consists of four main microservices: Order Service, Payment Service, Inventory Service, and Notification Service. These services communicate asynchronously through Apache Kafka to process customer orders without relying on direct synchronous communication between services.
+
+This document specifies the expected system behavior, external interfaces, functional requirements, performance expectations, quality attributes, and technical constraints. It also establishes the requirements for containerization and deployment using Docker and Kubernetes on a virtual machine.
+
+The SRS serves as a reference for the development team throughout the design, implementation, testing, and deployment phases of the project. It also provides the course instructor with a basis for evaluating whether the implemented system satisfies the defined requirements.
+
+This specification covers the complete order-processing workflow, from order creation to payment processing, inventory updates, and customer notification. The system is intended as an educational prototype, with payment processing and customer notifications simulated rather than integrated with real-world payment or messaging providers.
 
 ## 1.2 Document Conventions
 
