@@ -4,7 +4,9 @@
 
 # Event-Driven Order Processing System
 
-Version 1.0
+
+**Version:** 1.0 (Draft)
+
 
 Prepared by Rachid Boufous, 
 
@@ -16,17 +18,19 @@ Date: 26 October 2026
 
 Copyright © 1999 by Karl E. Wiegers. Permission is granted to use, modify, and distribute this document.
 
+
 ## Table of Contents
 
-- Table of Contents
 - Revision History
-- 1. Introduction
+
+- **1. Introduction**
   - 1.1 Purpose
   - 1.2 Document Conventions
   - 1.3 Intended Audience and Reading Suggestions
   - 1.4 Product Scope
   - 1.5 References
-- 2. Overall Description
+
+- **2. Overall Description**
   - 2.1 Product Perspective
   - 2.2 Product Functions
   - 2.3 User Classes and Characteristics
@@ -34,24 +38,53 @@ Copyright © 1999 by Karl E. Wiegers. Permission is granted to use, modify, and 
   - 2.5 Design and Implementation Constraints
   - 2.6 User Documentation
   - 2.7 Assumptions and Dependencies
-- 3. External Interface Requirements
+
+- **3. External Interface Requirements**
   - 3.1 User Interfaces
   - 3.2 Hardware Interfaces
   - 3.3 Software Interfaces
   - 3.4 Communications Interfaces
-- 4. System Features
-  - 4.1 System Feature 1
-  - 4.2 System Feature 2 (and so on)
-- 5. Other Nonfunctional Requirements
+
+- **4. System Features**
+  - 4.1 Order Creation and Management
+  - 4.2 Payment Processing
+  - 4.3 Inventory Processing
+  - 4.4 Customer Notification
+  - 4.5 Order Status Tracking
+  - 4.6 Error Handling and Recovery
+  - 4.7 Containerization and Kubernetes Deployment
+
+- **5. Other Nonfunctional Requirements**
   - 5.1 Performance Requirements
   - 5.2 Safety Requirements
   - 5.3 Security Requirements
   - 5.4 Software Quality Attributes
   - 5.5 Business Rules
-- 6. Other Requirements
-- Appendix A: Glossary
-- Appendix B: Analysis Models
-- Appendix C: To Be Determined List
+
+- **6. Other Requirements**
+  - 6.1 Database and Data Persistence
+  - 6.2 Event Data and Schema Compatibility
+  - 6.3 Configuration Management
+  - 6.4 Data Retention and Recovery
+  - 6.5 Software Reuse and Licensing
+  - 6.6 Internationalization and Localization
+  - 6.7 Legal and Regulatory Requirements
+  - 6.8 Project Deliverables
+
+- **Appendix A: Glossary**
+
+- **Appendix B: Analysis Models**
+  - B.1 System Architecture Model
+  - B.2 Order Processing Sequence Model
+  - B.3 Order State Transition Model
+  - B.4 Kubernetes Deployment Model
+  - B.5 Model Limitations and Future Refinement
+
+- **Appendix C: To Be Determined List**
+  - C.1 Unresolved Requirements and Decisions
+  - C.2 Decision Priorities
+  - C.3 Decision Tracking
+  - C.4 Decision Management
 
 ## Revision History
 
@@ -124,23 +157,23 @@ Developers and testers should then focus on Chapters 3, 4, and 5, while system a
 
 The Event-Driven Order Processing System is a distributed application designed to simulate and manage the main stages of an online order-processing workflow. The system handles order creation, payment processing, inventory updates, and customer notifications through independently deployable microservices.
 
-Problem Statement
+### Problem Statement
 
 In a traditional synchronous order-processing system, different operations may be connected through a sequence of direct service-to-service requests. When a customer places an order, the system may need to wait for payment processing, inventory updates, and notification services to complete before returning a response.
 
 This approach can introduce several architectural problems:
 
-Blocking dependencies: Slow downstream operations can increase the overall response time.
+- Blocking dependencies: Slow downstream operations can increase the overall response time.
 
-Tight coupling: Services depend directly on the availability and interfaces of other services.
+- Tight coupling: Services depend directly on the availability and interfaces of other services.
 
-Limited fault isolation: A failure in one service can disrupt the entire order-processing workflow.
+- Limited fault isolation: A failure in one service can disrupt the entire order-processing workflow.
 
-Difficult scalability: Individual processing stages may be difficult to scale independently.
+- Difficult scalability: Individual processing stages may be difficult to scale independently.
 
-Reduced modifiability: Adding new functionality may require changes to existing service interactions.
+- Reduced modifiability: Adding new functionality may require changes to existing service interactions.
 
-Proposed Solution
+### Proposed Solution
 
 The proposed system addresses these problems by combining Microservices Architecture with Event-Driven Architecture (EDA).
 
@@ -158,7 +191,7 @@ Instead of directly invoking each other for business operations, the services co
 
 This allows the Order Service to acknowledge an accepted order without waiting for all downstream operations to complete. Other services process the relevant events independently as they become available.
 
-Project Objectives
+### Project Objectives
 
 The main objectives of the system are:
 
@@ -174,11 +207,11 @@ Reliability: Support consistent order processing and recovery from temporary ser
 
 Deployability: Package the application using Docker containers and deploy the microservices on a virtual machine using Kubernetes.
 
-Project Boundaries
+### Project Boundaries
 
 The project focuses on demonstrating the architectural behavior of a distributed, event-driven order-processing system.
 
-In Scope:
+**In Scope:**
 
 Creation and basic validation of customer orders.
 
@@ -198,7 +231,7 @@ Deployment and management using Kubernetes.
 
 Testing of service communication, failure handling, and selected architectural quality attributes.
 
-Out of Scope:
+**Out of Scope:** 
 
 Integration with real banks or payment gateways.
 
@@ -224,7 +257,9 @@ Author: Flavio Carvalho (FL4V10ARC)
 
 Description: Open-source reference implementation of an event-driven order-processing system using Spring Boot microservices and Apache Kafka.
 
-Source: GitHub — Event-Driven Order System
+
+**Source:** [GitHub — Event-Driven Order System](https://github.com/FL4V10ARC/event-driven-order-system)
+
 
 Accessed: 26 October 2026
 
@@ -268,7 +303,9 @@ Document: Architecture Decision Record (ADR)
 
 Description: Reference material for documenting important software architecture decisions, including their context, rationale, and consequences.
 
-Source: GitHub — Architecture Decision Records
+
+**Source:** [GitHub — Architecture Decision Records](https://github.com/architecture-decision-record/architecture-decision-record)
+
 
 Accessed: 26 October 2026.
 
@@ -276,23 +313,24 @@ Accessed: 26 October 2026.
 
 ## 2.1 Product Perspective
 
-2.1 Product Perspective
 The Event-Driven Order Processing System is a distributed, event-driven application designed to demonstrate asynchronous communication and independent service deployment within an online order-processing workflow.
 
 The project is based on the open-source Event-Driven Order System developed by Flavio Carvalho. The reference implementation provides a foundation consisting of four Spring Boot microservices communicating through Apache Kafka. The proposed project extends this foundation to support additional requirements, improved reliability, containerization, and deployment using Kubernetes.
 
 The system is designed as a self-contained educational prototype rather than as a replacement for an existing commercial e-commerce platform.
-System Architecture
+### System Architecture
 The system follows a combination of Microservices Architecture and Event-Driven Architecture (EDA).
 
 Its main components are:
-1. Order Service: Provides the HTTP interface for creating orders, validates incoming requests, stores order information, and publishes events when orders are created.
-2. Payment Service: Receives order-created events, performs simulated payment processing, and publishes payment-result events.
-3. Inventory Service: Receives successful payment events, processes inventory updates, and publishes events indicating successful inventory operations.
-4. Notification Service: Receives inventory-update events and generates simulated customer confirmations.
-5. Apache Kafka: Acts as the event broker, enabling asynchronous communication between the microservices.
+
+1. **Order Service:** Provides the HTTP interface for creating orders, validates incoming requests, stores order information, and publishes events when orders are created.
+2. **Payment Service:** Receives order-created events, performs simulated payment processing, and publishes payment-result events.
+3. **Inventory Service:** Receives successful payment events, processes inventory updates, and publishes events indicating successful inventory operations.
+4. **Notification Service:** Receives inventory-update events and generates simulated customer confirmations.
+5. **Apache Kafka:** Acts as the event broker, enabling asynchronous communication between the microservices.
+
 Each microservice has a separate business responsibility and communicates with other services through events rather than direct synchronous business requests.
-System Interaction
+### System Interaction
 The order-processing workflow begins when a client submits an order through the Order Service's HTTP API.
 
 After validating and accepting the order, the Order Service stores the order information and publishes an OrderCreatedEvent to Apache Kafka.
@@ -304,7 +342,7 @@ The Inventory Service consumes the payment-approved event, performs an inventory
 Finally, the Notification Service consumes the inventory-updated event and generates a simulated order confirmation.
 
 Because these operations are performed asynchronously, the initial order request does not need to wait for the entire processing workflow to finish.
-Deployment Perspective
+### Deployment Perspective
 The completed application is intended to run in a containerized environment.
 
 Each microservice will be packaged as a Docker container image and deployed within a Kubernetes cluster hosted on a virtual machine.
@@ -314,7 +352,7 @@ Kubernetes will be responsible for managing application containers, service netw
 Apache Kafka will provide the messaging infrastructure required for asynchronous communication between the services.
 
 The deployment architecture is intended to demonstrate independent service management, fault isolation, and horizontal scaling within the resource limitations of the virtual machine.
-External Dependencies
+### External Dependencies
 The system depends on the following external technologies and infrastructure:
 - Apache Kafka: Event streaming and asynchronous message delivery.
 - Java and Spring Boot: Application development and execution.
@@ -326,53 +364,53 @@ The system does not require integration with external banking services, commerci
 
 ## 2.2 Product Functions
 
-2.2 Product Functions
+
 The Event-Driven Order Processing System provides a set of interconnected functions that support asynchronous order processing through independent microservices.
 
 The major functions of the system are described below.
-1. Order Creation and Management
+### 1. Order Creation and Management
 The system allows clients to submit orders through an HTTP API.
 
 The Order Service validates incoming order information, creates an order record, assigns a unique identifier, and publishes an event indicating that a new order has been created.
 
 The system acknowledges accepted orders without waiting for payment, inventory, and notification processing to complete.
-2. Payment Processing
+### 2. Payment Processing
 The Payment Service automatically processes newly created orders by consuming order-created events from Apache Kafka.
 
 Payment processing is simulated for educational purposes and does not involve real financial transactions.
 
 The system is intended to support successful and unsuccessful payment outcomes. Successful payments trigger the next stage of the order-processing workflow.
-3. Inventory Processing
+### 3. Inventory Processing
 The Inventory Service processes inventory operations after receiving events indicating successful payment.
 
 It is responsible for updating the inventory state associated with an order and publishing an event when the inventory operation completes successfully.
 
 The proposed system also aims to support handling of inventory-related failures, such as insufficient stock.
-4. Customer Notification
+### 4. Customer Notification
 The Notification Service processes events generated after successful inventory operations.
 
 It generates simulated customer confirmations indicating that an order has completed the required processing stages.
 
 Notifications are handled asynchronously so that notification processing does not block order creation or other completed operations.
-5. Order Status Tracking
+### 5. Order Status Tracking
 The system is intended to provide a mechanism for retrieving the current processing status of an order.
 
 This allows clients to distinguish between an order that has been accepted and an order that has completed the necessary payment and inventory operations.
 
 Order status information reflects the asynchronous nature of the system, where different processing stages may complete at different times.
-6. Event-Based Communication
+### 6. Event-Based Communication
 The system uses Apache Kafka to exchange events between microservices.
 
 Each service consumes events relevant to its responsibilities and publishes new events when appropriate.
 
 This communication mechanism reduces direct dependencies between services and allows individual processing stages to operate independently.
-7. Failure Handling and Recovery
+### 7. Failure Handling and Recovery
 The system is intended to support recovery from temporary service failures.
 
 When a downstream service becomes unavailable, previously published events may remain available in Kafka for processing after the service recovers, subject to message retention and consumer configuration.
 
 The proposed system will include mechanisms for handling processing failures and reducing the risk of duplicate operations.
-8. Containerized Deployment and Management
+### 8. Containerized Deployment and Management
 The application will support containerized deployment using Docker and Kubernetes.
 
 Each microservice will be packaged into a container image and deployed independently within a Kubernetes cluster hosted on a virtual machine.
@@ -386,37 +424,37 @@ These functions collectively support the project's objective of demonstrating re
 The Event-Driven Order Processing System is designed primarily as an educational prototype for demonstrating distributed software architecture. Users interact with the system through its HTTP API, development tools, and deployment infrastructure rather than through a dedicated graphical user interface.
 
 The following user classes have been identified:
-1. API Client (Simulated Customer)
+### 1. API Client (Simulated Customer)
 The API Client represents a customer or external application that interacts with the Order Service.
 
 Its primary responsibility is to submit order requests and retrieve information about the processing status of submitted orders.
 
-Characteristics:
+**Characteristics:**
 - Interacts with the system through HTTP requests.
 - Does not require knowledge of the internal microservices architecture.
 - Expects valid order requests to be acknowledged without waiting for all downstream operations to complete.
 - May retrieve order-processing information through a status endpoint.
 - Does not interact directly with Apache Kafka or individual downstream microservices.
-Priority: High
-2. System Administrator / Operator
+**Priority:** High
+### 2. System Administrator / Operator
 The System Administrator is responsible for deploying, configuring, monitoring, and maintaining the application infrastructure.
 
 This user interacts with Docker, Kubernetes, and application monitoring or logging tools.
 
-Characteristics:
+**Characteristics:**:
 - Possesses technical knowledge of containerization and distributed systems.
 - Deploys and manages the application within the Kubernetes cluster.
 - Monitors application health, service availability, and processing errors.
 - Inspects service logs to diagnose problems.
 - Restarts or scales individual services when necessary.
 - Manages application configuration and infrastructure resources.
-Priority: High
-3. Developer / Tester
+**Priority:** High
+### 3. Developer / Tester
 The Developer or Tester is responsible for implementing, maintaining, and verifying the system's functionality and architectural behavior.
 
 This user interacts with the application source code, development environment, HTTP API, event broker, and testing tools.
 
-Characteristics:
+**Characteristics:**:
 - Possesses knowledge of Java, Spring Boot, Apache Kafka, and microservices.
 - Develops and maintains individual application services.
 - Tests the complete order-processing workflow.
@@ -424,51 +462,72 @@ Characteristics:
 - Simulates service failures and evaluates recovery behavior.
 - Validates functional and non-functional requirements.
 - Investigates system behavior using application logs and testing tools.
-Priority: High
-User Class Summary
-User Class	Primary Interaction	Main Responsibilities	Priority
-API Client (Simulated Customer)	HTTP API	Submit orders and retrieve order status	High
-System Administrator / Operator	Docker, Kubernetes, system logs	Deploy, monitor, configure, and manage services	High
-Developer / Tester	Source code, HTTP API, Kafka, testing tools	Implement, test, debug, and verify the system	HighThe system does not currently require separate administrative interfaces, customer authentication, or role-based access control for its educational demonstration.
+**Priority:** High
+
+### User Class Summary
+
+| User Class | Primary Interaction | Main Responsibilities | Priority |
+|------------|---------------------|-----------------------|----------|
+| API Client (Simulated Customer) | HTTP API | Submit orders and retrieve order status | High |
+| System Administrator / Operator | Docker, Kubernetes, system logs | Deploy, monitor, configure, and manage services | High |
+| Developer / Tester | Source code, HTTP API, Kafka, testing tools | Implement, test, debug, and verify the system | High |
+
+The system does not currently require separate administrative interfaces, customer authentication, or role-based access control for its educational demonstration.
 
 Additional user classes may be introduced if the project scope is expanded in future versions.
+
 
 ## 2.4 Operating Environment
 
 The Event-Driven Order Processing System is designed to operate in a containerized environment hosted on a virtual machine (VM). The application consists of independent Java-based microservices that communicate asynchronously using Apache Kafka.
 
 The project supports two operating environments: a local development environment and a Kubernetes-based deployment environment.
-2.4.1 Local Development Environment
+
+### 2.4.1 Local Development Environment
+
 The local development environment is used for implementing, testing, and debugging the microservices before deployment.
 
 The reference implementation uses the following technologies:
-Component	Technology	Purpose
-Programming Language	Java 21	Implementation of the microservices
-Application Framework	Spring Boot 3.3.5	Development of standalone application services
-Build Tool	Apache Maven	Dependency management and application builds
-Message Broker	Apache Kafka	Asynchronous communication between services
-Database	H2 Database	In-memory order storage in the reference implementation
-Containerization	Docker	Packaging and running containerized components
-Local Infrastructure	Docker Compose	Running Kafka infrastructure during development
-Operating System	Windows or Linux	Local development and testingDevelopment tools such as an IDE, HTTP API testing client, and Git may be used to implement and verify the application.
-2.4.2 Deployment Environment
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Programming Language | Java 21 | Implementation of the microservices |
+| Application Framework | Spring Boot 3.3.5 | Development of standalone application services |
+| Build Tool | Apache Maven | Dependency management and application builds |
+| Message Broker | Apache Kafka | Asynchronous communication between services |
+| Database | H2 Database | In-memory order storage in the reference implementation |
+| Containerization | Docker | Packaging and running containerized components |
+| Local Infrastructure | Docker Compose | Running Kafka infrastructure during development |
+| Operating System | Windows or Linux | Local development and testing |
+
+Development tools such as an IDE, HTTP API testing client, and Git may be used to implement and verify the application.
+
+
+### 2.4.2 Deployment Environment
+
 The completed system will be deployed on a virtual machine using a Kubernetes-based container orchestration environment.
 
 The target deployment will contain the four application microservices, Apache Kafka, and the database components required for the selected persistence strategy.
-Component	Target Environment
-Hosting Infrastructure	Virtual Machine (VM)
-Operating System	Linux-based Kubernetes host
-Container Images	Docker-built OCI-compatible images
-Container Orchestration	Kubernetes
-Application Runtime	Java 21
-Application Framework	Spring Boot
-Event Broker	Apache Kafka
-Database	To Be Determined (TBD)
-Application Networking	Kubernetes Services
-External API Access	Kubernetes networking or ingress configuration (TBD)Each microservice will run as an independently managed Kubernetes workload.
+
+| Component | Target Environment |
+|-----------|-------------------|
+| Hosting Infrastructure | Virtual Machine (VM) |
+| Operating System | Linux-based Kubernetes host |
+| Container Images | Docker-built OCI-compatible images |
+| Container Orchestration | Kubernetes |
+| Application Runtime | Java 21 |
+| Application Framework | Spring Boot |
+| Event Broker | Apache Kafka |
+| Database | To Be Determined (TBD) |
+| Application Networking | Kubernetes Services |
+| External API Access | Kubernetes networking or ingress configuration (TBD) |
+
+Each microservice will run as an independently managed Kubernetes workload.
 
 Kubernetes will provide service discovery, container lifecycle management, restart capabilities, and configurable application scaling.
-2.4.3 Hardware Requirements
+
+
+### 2.4.3 Hardware Requirements
 The deployment environment must provide sufficient computing resources to execute the application microservices, Apache Kafka, Kubernetes components, and the selected database.
 
 The exact minimum hardware requirements have not yet been established and will depend on the available virtual machine and the final deployment configuration.
@@ -480,7 +539,7 @@ The following specifications remain to be determined:
 - Network configuration and external connectivity.
 - Persistent storage requirements.
 The final resource requirements will be documented and validated during deployment testing.
-2.4.4 Network and Communication Environment
+### 2.4.4 Network and Communication Environment
 The system requires network connectivity between its microservices and Apache Kafka.
 
 External clients will communicate with the Order Service through an HTTP-based API.
@@ -490,7 +549,7 @@ Internal business communication between microservices will use Apache Kafka topi
 Within Kubernetes, services will use the cluster's networking and service-discovery mechanisms to communicate with the required infrastructure components.
 
 The exact external access method and network security configuration will be determined during deployment design.
-2.4.5 Environment Compatibility
+### 2.4.5 Environment Compatibility
 The application will be packaged into container images to provide consistent runtime dependencies across development and deployment environments.
 
 Environment-specific configuration, such as Kafka broker addresses, database connection settings, and service ports, will be supplied through external configuration rather than embedded directly in the application code.
@@ -1116,8 +1175,6 @@ These interfaces are **Not Applicable (N/A)** to the current educational prototy
 
 # 4. System Features
 
-&lt;This template illustrates organizing the functional requirements for the product by system features, the major services provided by the product. You may prefer to organize this section by use case, mode of operation, user class, object class, functional hierarchy, or combinations of these, whatever makes the most logical sense for your product.&gt;
-
 ## 4.1 Order Creation and Management
 
 ### 4.1.1 Description and Priority
@@ -1131,6 +1188,8 @@ The Order Service is responsible for receiving order requests, validating the su
 The system must acknowledge accepted orders without waiting for payment processing, inventory updates, or customer notifications to complete.
 
 This feature has **High priority** because order creation is the entry point to the entire order-processing workflow. Without it, downstream services cannot begin processing orders.
+
+
 
 ### 4.1.2 Stimulus/Response Sequences
 
@@ -1165,6 +1224,7 @@ The system must ensure that an acknowledged order is not silently lost if event 
 
 The Order Status Retrieval interface is a proposed extension of the reference implementation.
 
+
 ### 4.1.3 Functional Requirements
 
 | ID | Functional Requirement | Priority |
@@ -1188,23 +1248,9 @@ The specific HTTP status codes, response schemas, and implementation mechanism f
 
 The functional requirements above describe the expected behavior of the completed system. Some requirements extend beyond the capabilities of the original reference implementation.
 
-### 4.1.1 Description and Priority
-
-&lt;Provide a short description of the feature and indicate whether it is of High, Medium, or Low priority. You could also include specific priority component ratings, such as benefit, penalty, cost, and risk (each rated on a relative scale from a low of 1 to a high of 9).&gt;
-
 ### 4.1.2 Stimulus/Response Sequences
 
 &lt;List the sequences of user actions and system responses that stimulate the behavior defined for this feature. These will correspond to the dialog elements associated with use cases.&gt;
-
-### 4.1.3 Functional Requirements
-
-&lt;Itemize the detailed functional requirements associated with this feature. These are the software capabilities that must be present in order for the user to carry out the services provided by the feature, or to execute the use case. Include how the product should respond to anticipated error conditions or invalid inputs. Requirements should be concise, complete, unambiguous, verifiable, and necessary. Use “TBD” as a placeholder to indicate when necessary information is not yet available.&gt;
-
-&lt;Each requirement should be uniquely identified with a sequence number or a meaningful tag of some kind.&gt;
-
-REQ-1:
-
-REQ-2:
 
 ## 4.2 Payment Processing
 
@@ -1447,12 +1493,21 @@ This feature has **High priority** because it represents the final stage of the 
 
 ### 4.4.3 Functional Requirements
 
+
 | ID | Functional Requirement | Priority |
 |----|------------------------|----------|
 | FR-44 | The Notification Service MUST consume `InventoryUpdatedEvent` messages from the `inventory-updated` Kafka topic. | High |
 | FR-45 | The Notification Service MUST extract the order identifier from each valid inventory-update event. | High |
 | FR-46 | The Notification Service MUST generate a simulated confirmation following successful inventory processing. | High |
-|
+| FR-47 | The generated confirmation MUST be associated with the correct order identifier. | High |
+| FR-48 | The Notification Service MUST record successful notification processing in application logs or another configured notification record. | High |
+| FR-49 | The Notification Service MUST process notifications asynchronously without blocking the initial order-creation request. | High |
+| FR-50 | The Notification Service MUST prevent duplicate logical confirmations when the same event is processed more than once. | High |
+| FR-51 | The Notification Service MUST handle temporary processing failures without silently discarding unprocessed events. | High |
+| FR-52 | The Notification Service MUST log notification-processing errors with sufficient information to identify the affected order. | High |
+| FR-53 | The system MUST allow order creation and upstream processing to continue when the Notification Service is temporarily unavailable, provided their required dependencies remain operational. | High |
+| FR-54 | The Notification Service SHOULD resume processing eligible unprocessed events after recovering from temporary unavailability. | Medium |
+| FR-55 | The Notification Service SHOULD support a defined retry and dead-letter handling mechanism for events that cannot be processed successfully. | Medium |
 
 
 ## 4.5 Order Status Tracking
@@ -2170,96 +2225,6 @@ If a required business operation fails, the order must not continue through the 
 
 These business rules are implemented through the functional requirements defined in Chapter 4 and are independent of the specific technologies used to implement the application.
 
-
-## 5.1 Performance Requirements
-
-The Event-Driven Order Processing System must provide acceptable responsiveness and processing performance under workloads appropriate for an educational distributed application.
-
-The system uses asynchronous event communication to allow order requests to be acknowledged without waiting for downstream payment, inventory, and notification operations to finish.
-
-Performance requirements focus on order-creation response time, end-to-end processing latency, throughput, and resource utilization.
-
-The quantitative thresholds defined below are proposed acceptance targets. They will be validated and, if necessary, revised after the target virtual machine and Kubernetes environment have been configured.
-
-### 5.1.1 Order Creation Response Time
-
-The Order Service must acknowledge valid order-creation requests without waiting for downstream payment, inventory, and notification processing.
-
-**NFR-01:** Under a workload of 10 concurrent clients, at least 95% of valid order-creation requests SHOULD receive a response within 1 second.
-
-**NFR-02:** The duration of the order-creation request MUST NOT depend on the completion of downstream payment, inventory, or notification operations.
-
-**NFR-03:** The system MUST NOT report an order as successfully accepted unless the required order-acceptance and reliable event-publication conditions have been satisfied.
-
-### 5.1.2 End-to-End Processing Latency
-
-The system should complete the successful order-processing workflow within a reasonable period when all required components are operational.
-
-**NFR-04:** Under a healthy deployment and a test workload of 10 concurrent clients, at least 95% of successfully processed orders SHOULD complete the simulated payment, inventory, and notification workflow within 10 seconds.
-
-**NFR-05:** End-to-end processing latency SHOULD be measured from successful order acceptance until the corresponding simulated notification has been recorded.
-
-These targets exclude intentionally simulated service outages and externally introduced processing delays.
-
-### 5.1.3 System Throughput
-
-The system should be capable of processing multiple order requests without requiring sequential completion of each order's downstream workflow.
-
-**NFR-06:** The system SHOULD support at least 10 concurrent order-submission clients under the defined performance-test environment.
-
-**NFR-07:** The system SHOULD process a test batch of 100 valid orders without losing accepted orders or incorrectly duplicating business operations.
-
-**NFR-08:** The achieved order-processing throughput MUST be measured and documented during performance testing.
-
-The final sustained throughput target will be determined after evaluating the available virtual machine resources.
-
-### 5.1.4 Scalability Performance
-
-The system architecture must allow application services to be scaled independently according to their workloads.
-
-**NFR-09:** Increasing the replica count of an application microservice MUST NOT require redeploying unrelated microservices.
-
-**NFR-10:** The system SHOULD demonstrate that appropriately configured additional consumer instances can share event-processing workloads.
-
-**NFR-11:** Scalability testing MUST account for Kafka topic partitions, consumer groups, and available infrastructure resources.
-
-### 5.1.5 Resource Utilization
-
-The application must operate within the computing resources available on the selected virtual machine.
-
-**NFR-12:** The deployed system MUST operate within the allocated CPU, memory, and storage resources of the virtual machine.
-
-**NFR-13:** Performance testing SHOULD record CPU and memory utilization for the application workloads.
-
-**NFR-14:** The system SHOULD remain operational under the defined test workload without resource-exhaustion failures.
-
-Exact resource limits will be established after the virtual machine specifications and deployment configuration have been finalized.
-
-### 5.1.6 Performance Verification
-
-The development team will conduct performance tests to evaluate the defined requirements.
-
-The tests will measure:
-
-- HTTP order-creation response times.
-- End-to-end processing latency.
-- Number of successfully processed orders.
-- Number of failed or incomplete operations.
-- Order-processing throughput.
-- Resource utilization.
-- Effects of changing application replica counts.
-
-Performance-test results will be documented in the final project report.
-
-The report will distinguish between the specified performance targets and the actual measurements obtained from the deployed system.
-
-## 5.4 Software Quality Attributes
-
-&lt;Specify any additional quality characteristics for the product that will be important to either the customers or the developers. Some to consider are: adaptability, availability, correctness, flexibility, interoperability, maintainability, portability, reliability, reusability, robustness, testability, and usability. Write these to be specific, quantitative, and verifiable when possible. At the least, clarify the relative preferences for various attributes, such as ease of use over ease of learning.&gt;
-
-## 5.5 Business Rules
-
-&lt;List any operating principles about the product, such as which individuals or roles can perform which functions under specific circumstances. These are not functional requirements in themselves, but they may imply certain functional requirements to enforce the rules.&gt;
 
 # 6. Other Requirements
 
