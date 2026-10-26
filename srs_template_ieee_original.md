@@ -841,23 +841,352 @@ Such interfaces may be developed in future versions without changing the main ev
 
 ## 3.2 Hardware Interfaces
 
-&lt;Describe the logical and physical characteristics of each interface between the software product and the hardware components of the system. This may include the supported device types, the nature of the data and control interactions between the software and the hardware, and communication protocols to be used.&gt;
+**Not Applicable (N/A) — Direct Hardware Interfaces.**
+
+The Event-Driven Order Processing System is a software-based distributed application and does not require direct communication with specialized physical hardware, sensors, embedded devices, or external peripherals.
+
+The application will operate within a virtualized computing environment, where hardware resources such as CPU, memory, storage, and network interfaces are managed by the underlying operating system and Kubernetes infrastructure.
+
+The microservices interact with these resources indirectly through the Java runtime, operating system, and container environment.
+
+The system does not require custom hardware drivers, device-specific communication protocols, or direct hardware control interfaces.
+
+General computing resource requirements for the virtual machine are described in **Section 2.4 — Operating Environment**.
+
+Therefore, no additional hardware-specific interfaces are required for the current project scope.
 
 ## 3.3 Software Interfaces
 
-&lt;Describe the connections between this product and other specific software components (name and version), including databases, operating systems, tools, libraries, and integrated commercial components. Identify the data items or messages coming into the system and going out and describe the purpose of each. Describe the services needed and the nature of communications. Refer to documents that describe detailed application programming interface protocols. Identify data that will be shared across software components. If the data sharing mechanism must be implemented in a specific way (for example, use of a global data area in a multitasking operating system), specify this as an implementation constraint.&gt;
+The Event-Driven Order Processing System consists of independent microservices that interact with external clients, Apache Kafka, database systems, and container orchestration infrastructure.
+
+The system exposes an HTTP API for external clients, while internal business operations are coordinated through asynchronous events published and consumed using Apache Kafka.
+
+The following subsections describe the major software interfaces.
+
+### 3.3.1 HTTP API Interface
+
+The Order Service provides the main software interface through which external applications interact with the system.
+
+The reference implementation exposes an HTTP endpoint for submitting new orders.
+
+| Interface | Method | Endpoint | Purpose |
+|-----------|--------|----------|---------|
+| Order Creation | POST | `/orders` | Submit a new order |
+| Order Status (Proposed) | GET | `/orders/{orderId}` | Retrieve the processing status of an existing order |
+
+Requests and responses use JSON.
+
+The order-creation request includes the following information:
+
+- Product identifier.
+- Quantity.
+- Product price.
+
+The Order Service validates the submitted information, creates an order record, and initiates asynchronous processing.
+
+The exact response schemas, validation rules, and HTTP status codes will be specified in Chapter 4.
+
+### 3.3.2 Apache Kafka Interface
+
+Apache Kafka provides the messaging infrastructure for asynchronous communication between the microservices.
+
+Each service communicates through Kafka topics by publishing or consuming events relevant to its business responsibilities.
+
+The reference implementation defines the following event interactions:
+
+| Kafka Topic | Producer | Consumer | Purpose |
+|-------------|----------|----------|---------|
+| `order-created` | Order Service | Payment Service | Notify the payment service that a new order has been created |
+| `payment-approved` | Payment Service | Inventory Service | Indicate successful payment processing |
+| `inventory-updated` | Inventory Service | Notification Service | Indicate successful inventory processing |
+
+Kafka acts as an intermediary between the services, removing the need for direct synchronous business requests between them.
+
+Each microservice must be configured to connect to the Kafka broker and use the appropriate topics for its responsibilities.
+
+### 3.3.3 Event Message Interfaces
+
+Events exchanged between microservices represent changes or outcomes in the order-processing workflow.
+
+The system uses the following primary event types:
+
+**OrderCreatedEvent**
+
+Published by the Order Service after an order has been accepted.
+
+The event initiates payment processing and carries information required to identify and process the associated order.
+
+**PaymentApprovedEvent**
+
+Published by the Payment Service after a simulated payment has been approved.
+
+The event indicates that the order can proceed to inventory processing.
+
+**InventoryUpdatedEvent**
+
+Published by the Inventory Service following a successful inventory operation.
+
+The event triggers the customer notification stage.
+
+For the extended implementation, the system should define consistent event structures that support:
+
+- Unique event identification.
+- Order identification.
+- Event type identification.
+- Event creation timestamps.
+- Correlation between related processing events.
+- Event schema versioning.
+
+The exact fields and serialization formats will be finalized during interface design.
+
+Additional event types may be introduced to represent unsuccessful payment or inventory operations.
+
+### 3.3.4 Database Interface
+
+The Order Service interacts with a database to store and retrieve order information.
+
+The original reference implementation uses an H2 in-memory database for order persistence.
+
+The completed project may adopt a persistent database to support data recovery after application restarts.
+
+The database interface must support the following operations:
+
+- Creating order records.
+- Retrieving existing order information.
+- Updating order-processing states where required.
+- Maintaining unique identifiers for stored orders.
+
+If persistent inventory or payment records are introduced, the corresponding services will manage their own application data according to the selected data ownership strategy.
+
+The final database technology and persistence configuration remain **To Be Determined (TBD)**.
+
+### 3.3.5 Container and Kubernetes Interfaces
+
+The application will be packaged as container images and deployed through Kubernetes.
+
+Kubernetes provides infrastructure-level interfaces for:
+
+- Deploying individual microservices.
+- Configuring application environments.
+- Providing internal service discovery.
+- Managing application instances.
+- Restarting failed containers.
+- Inspecting application health and operational status.
+- Scaling supported services independently.
+
+The application will use Kubernetes configuration mechanisms to obtain environment-specific settings, including Kafka broker addresses and database connection information.
+
+Kubernetes is responsible for infrastructure orchestration and does not replace Apache Kafka as the communication mechanism for business events.
+
+### 3.3.6 Software Interface Compatibility
+
+The following compatibility requirements apply:
+
+- All event-producing and event-consuming services must use compatible event schemas.
+- Kafka topic names must be consistent between producers and consumers.
+- Service configuration must support changes in infrastructure addresses without requiring modifications to business logic.
+- Database interfaces must be compatible with the selected persistence technology.
+- Container images must be compatible with the selected Kubernetes deployment environment.
+- Changes to event structures must be coordinated to avoid breaking dependent consumers.
+
+The detailed communication protocols, message serialization, network configuration, and security requirements are described in **Section 3.4 — Communications Interfaces**.
 
 ## 3.4 Communications Interfaces
 
-&lt;Describe the requirements associated with any communications functions required by this product, including e-mail, web browser, network server communications protocols, electronic forms, and so on. Define any pertinent message formatting. Identify any communication standards that will be used, such as FTP or HTTP. Specify any communication security or encryption issues, data transfer rates, and synchronization mechanisms.&gt;
+The Event-Driven Order Processing System uses HTTP-based communication for external client interactions and Apache Kafka for asynchronous communication between microservices.
+
+The communication architecture is designed to reduce direct dependencies between services, support independent processing, and enable the system to operate in a distributed containerized environment.
+
+### 3.4.1 HTTP Communication
+
+External clients communicate with the Order Service using the Hypertext Transfer Protocol (HTTP).
+
+The HTTP interface uses JSON for exchanging structured request and response data.
+
+The following requirements apply:
+
+- The Order Service must expose an HTTP API for accepting order requests.
+- Requests containing structured order information must use JSON.
+- API responses must use appropriate HTTP status codes.
+- Invalid requests must result in understandable error responses.
+- The Order Service must acknowledge accepted orders without waiting for all downstream processing stages to complete.
+- The exact API response structure and error formats must be defined in the functional requirements.
+
+The HTTP interface acts as the primary entry point to the order-processing system.
+
+### 3.4.2 Apache Kafka Communication
+
+Internal business communication between microservices must use Apache Kafka.
+
+The services communicate asynchronously by publishing and consuming events through Kafka topics.
+
+The reference implementation defines three primary topics:
+
+| Topic | Producer | Consumer |
+|-------|----------|----------|
+| `order-created` | Order Service | Payment Service |
+| `payment-approved` | Payment Service | Inventory Service |
+| `inventory-updated` | Inventory Service | Notification Service |
+
+The following requirements apply:
+
+- Microservices must use the appropriate Kafka topics for exchanging business events.
+- Event producers must publish messages using agreed event structures.
+- Event consumers must deserialize and interpret the messages they receive.
+- Consumers must process events according to their assigned business responsibilities.
+- Temporary consumer unavailability must not require direct synchronous communication between services.
+- The implementation must account for the possibility of duplicate event delivery.
+- Event processing and recovery behavior must be consistent with the selected Kafka configuration.
+
+### 3.4.3 Message Serialization
+
+Messages exchanged through HTTP interfaces and Kafka must use consistent, structured data formats.
+
+HTTP requests and responses will use JSON.
+
+The reference implementation uses JSON-based event serialization for communication through Apache Kafka.
+
+The completed system must define compatible message structures for each event type.
+
+Event structures should include sufficient information to:
+
+- Identify the related order.
+- Identify the event type.
+- Associate related events with the same processing workflow.
+- Interpret the data required by the consuming service.
+
+The final event schemas and any additional metadata fields will be established during detailed interface design.
+
+### 3.4.4 Network Communication
+
+The system will operate within a Kubernetes environment hosted on a virtual machine.
+
+Kubernetes networking will provide communication between application components and the supporting infrastructure.
+
+The following network requirements apply:
+
+- The Order Service must be accessible to authorized external API clients.
+- Microservices must be able to establish connections to the Kafka broker.
+- Services requiring database access must be able to connect to their configured database.
+- Internal infrastructure components should not be unnecessarily exposed outside the Kubernetes environment.
+- Service addresses and network configuration must be configurable for different deployment environments.
+
+The method used to expose the Order Service outside the Kubernetes cluster will be determined during deployment planning.
+
+### 3.4.5 Communication Security
+
+Communication interfaces must follow basic security practices appropriate for the deployment environment.
+
+The following requirements apply:
+
+- External network access must be restricted to the interfaces necessary for operating and testing the system.
+- Sensitive connection settings and credentials must not be embedded directly in source code.
+- Communication between components must use the security configuration supported by the selected deployment infrastructure.
+- HTTPS must be used if the application API is exposed over an untrusted public network.
+- Kafka and database administration interfaces must not be publicly accessible without appropriate access controls.
+
+The final configuration of authentication, encryption, and network access restrictions will be defined during deployment design.
+
+### 3.4.6 Asynchronous Processing and Synchronization
+
+The system follows an asynchronous processing model in which services react to events rather than waiting for direct responses from other microservices.
+
+The following principles apply:
+
+- Order creation must not depend on the completion of all downstream business operations.
+- Each service processes relevant events independently.
+- The order-processing workflow may exhibit eventual consistency while different processing stages are being completed.
+- Related events must contain sufficient information to associate them with the correct order.
+- Consumers must account for possible event redelivery.
+- The system must define appropriate mechanisms for handling unsuccessful event processing.
+
+The exact retry policies, event ordering requirements, and failure recovery mechanisms will be finalized during implementation design.
+
+### 3.4.7 Communication Interfaces Not Required
+
+The current project does not require the following external communication interfaces:
+
+- Direct integration with real banking or payment networks.
+- SMS gateway communication.
+- External commercial email delivery services.
+- Communication with shipping or logistics providers.
+- Specialized hardware communication protocols.
+
+These interfaces are **Not Applicable (N/A)** to the current educational prototype because payment processing and customer notifications are simulated.
 
 # 4. System Features
 
 &lt;This template illustrates organizing the functional requirements for the product by system features, the major services provided by the product. You may prefer to organize this section by use case, mode of operation, user class, object class, functional hierarchy, or combinations of these, whatever makes the most logical sense for your product.&gt;
 
-## 4.1 System Feature 1
+## 4.1 Order Creation and Management
 
-&lt;Don’t really say “System Feature 1.” State the feature name in just a few words.&gt;
+### 4.1.1 Description and Priority
+
+**Priority: High**
+
+The Order Creation and Management feature allows external clients to submit new orders through the Order Service's HTTP API.
+
+The Order Service is responsible for receiving order requests, validating the submitted information, creating an order record, assigning a unique identifier, and initiating asynchronous order processing by publishing an event to Apache Kafka.
+
+The system must acknowledge accepted orders without waiting for payment processing, inventory updates, or customer notifications to complete.
+
+This feature has **High priority** because order creation is the entry point to the entire order-processing workflow. Without it, downstream services cannot begin processing orders.
+
+### 4.1.2 Stimulus/Response Sequences
+
+**Scenario 1: Successful Order Creation**
+
+1. The client sends an HTTP `POST` request to the `/orders` endpoint.
+2. The request contains the product identifier, quantity, and price.
+3. The Order Service receives and validates the submitted information.
+4. The Order Service generates a unique order identifier.
+5. The Order Service creates and stores an order record with an initial processing status.
+6. The system initiates publication of an `OrderCreatedEvent` to the `order-created` Kafka topic.
+7. The Order Service returns a successful acknowledgement containing the order identifier.
+8. The remaining order-processing operations are performed asynchronously by downstream services.
+
+The system must ensure that an acknowledged order is not silently lost if event publication fails. The mechanism used to coordinate order persistence and reliable event publication remains to be determined.
+
+**Scenario 2: Invalid Order Request**
+
+1. The client submits an order containing missing or invalid information.
+2. The Order Service validates the incoming request.
+3. The system identifies the invalid fields.
+4. The Order Service rejects the request.
+5. The system returns an appropriate HTTP error response describing the validation failure.
+6. No order is accepted and no `OrderCreatedEvent` is published for the rejected request.
+
+**Scenario 3: Order Status Retrieval**
+
+1. The client submits an HTTP `GET` request containing an order identifier.
+2. The Order Service checks whether the requested order exists.
+3. If the order exists, the system returns its identifier and latest recorded processing status.
+4. If the order does not exist, the system returns an appropriate not-found response.
+
+The Order Status Retrieval interface is a proposed extension of the reference implementation.
+
+### 4.1.3 Functional Requirements
+
+| ID | Functional Requirement | Priority |
+|----|------------------------|----------|
+| FR-01 | The system MUST provide an HTTP `POST /orders` endpoint for submitting new orders. | High |
+| FR-02 | The system MUST accept order requests containing a product identifier, quantity, and price. | High |
+| FR-03 | The system MUST validate all required order fields before accepting an order. | High |
+| FR-04 | The system MUST reject orders with a missing product identifier, non-positive quantity, or invalid price. | High |
+| FR-05 | The system MUST assign a unique identifier to each successfully created order. | High |
+| FR-06 | The system MUST store accepted order information in the configured database. | High |
+| FR-07 | The system MUST associate each accepted order with an initial processing status. | High |
+| FR-08 | The system MUST initiate publication of an `OrderCreatedEvent` to the `order-created` Kafka topic for each accepted order. | High |
+| FR-09 | The system MUST acknowledge accepted orders without waiting for downstream payment, inventory, and notification operations to complete. | High |
+| FR-10 | The system MUST return an appropriate error response when order validation fails. | High |
+| FR-11 | The system MUST prevent rejected order requests from initiating the downstream order-processing workflow. | High |
+| FR-12 | The system MUST prevent successfully acknowledged orders from being silently lost because of a failure between order persistence and event publication. | High |
+| FR-13 | The system SHOULD provide an HTTP `GET /orders/{orderId}` endpoint for retrieving an existing order's processing status. | Medium |
+| FR-14 | The system SHOULD return an appropriate not-found response when a requested order identifier does not exist. | Medium |
+
+The specific HTTP status codes, response schemas, and implementation mechanism for reliable event publication will be defined during detailed interface design.
+
+The functional requirements above describe the expected behavior of the completed system. Some requirements extend beyond the capabilities of the original reference implementation.
 
 ### 4.1.1 Description and Priority
 
@@ -877,7 +1206,547 @@ REQ-1:
 
 REQ-2:
 
-## 4.2 System Feature 2 (and so on)
+## 4.2 Payment Processing
+
+### 4.2.1 Description and Priority
+
+**Priority: High**
+
+The Payment Processing feature is responsible for handling simulated payment operations associated with newly created orders.
+
+The Payment Service operates as an independent microservice that receives `OrderCreatedEvent` messages from the `order-created` Apache Kafka topic.
+
+Upon receiving an event, the service performs a simulated payment operation and determines whether the payment is approved or rejected.
+
+When payment is approved, the Payment Service publishes a `PaymentApprovedEvent` to the `payment-approved` Kafka topic, allowing the Inventory Service to continue processing the order.
+
+When payment is rejected, the system must record or communicate the unsuccessful payment outcome without initiating inventory processing.
+
+Payment operations are simulated and do not involve real banking systems, payment gateways, or financial transactions.
+
+This feature has **High priority** because payment approval is a required stage in the order-processing workflow and determines whether an order can proceed to inventory processing.
+
+### 4.2.2 Stimulus/Response Sequences
+
+**Scenario 1: Successful Payment Processing**
+
+1. The Order Service publishes an `OrderCreatedEvent` to the `order-created` Kafka topic.
+2. The Payment Service consumes the event.
+3. The Payment Service extracts the information required to identify and process the associated order.
+4. The service performs a simulated payment operation.
+5. The simulated payment is approved.
+6. The Payment Service publishes a `PaymentApprovedEvent` to the `payment-approved` Kafka topic.
+7. The Inventory Service can consume the payment-approved event and proceed with the next processing stage.
+
+**Scenario 2: Payment Rejection**
+
+1. The Payment Service receives an `OrderCreatedEvent`.
+2. The service performs simulated payment processing.
+3. The simulated payment is rejected.
+4. The Payment Service records or publishes an unsuccessful payment outcome.
+5. No `PaymentApprovedEvent` is published for the rejected payment.
+6. The associated order must not proceed to inventory processing.
+
+The event structure and mechanism used to communicate payment rejection will be finalized during implementation design.
+
+**Scenario 3: Duplicate Event Delivery**
+
+1. The Payment Service receives an `OrderCreatedEvent`.
+2. The service processes the event and records the payment outcome.
+3. The same logical event is delivered again.
+4. The Payment Service identifies that the payment operation has already been processed.
+5. The service prevents duplicate logical payment operations.
+6. Any required event republication must preserve the original business outcome.
+
+**Scenario 4: Temporary Processing Failure**
+
+1. The Payment Service receives an `OrderCreatedEvent`.
+2. A temporary error prevents successful processing.
+3. The service records the failure in its logs.
+4. The message remains eligible for recovery or retry according to the configured event-processing mechanism.
+5. Processing resumes when the failure condition is resolved.
+6. If the event cannot be processed successfully after the configured recovery attempts, it must be handled through a defined failure-management mechanism.
+
+The specific retry policy, error classification, and dead-letter handling configuration remain to be determined.
+
+### 4.2.3 Functional Requirements
+
+| ID | Functional Requirement | Priority |
+|----|------------------------|----------|
+| FR-15 | The Payment Service MUST consume `OrderCreatedEvent` messages from the `order-created` Kafka topic. | High |
+| FR-16 | The Payment Service MUST extract the order information required to perform simulated payment processing. | High |
+| FR-17 | The Payment Service MUST perform a simulated payment operation for each valid, previously unprocessed order. | High |
+| FR-18 | The Payment Service MUST support a successful payment outcome. | High |
+| FR-19 | The Payment Service MUST publish a `PaymentApprovedEvent` to the `payment-approved` Kafka topic following successful payment processing. | High |
+| FR-20 | The Payment Service MUST support a simulated payment rejection outcome. | High |
+| FR-21 | The system MUST prevent rejected payments from initiating inventory processing. | High |
+| FR-22 | The Payment Service MUST provide an identifiable outcome for each successfully processed payment event. | High |
+| FR-23 | The Payment Service MUST prevent duplicate logical payment operations when the same order event is processed more than once. | High |
+| FR-24 | The Payment Service MUST handle temporary processing failures without silently discarding unprocessed events. | High |
+| FR-25 | The Payment Service MUST log payment-processing errors with sufficient information to identify the associated order. | High |
+| FR-26 | The Payment Service SHOULD support configurable simulated payment outcomes for testing successful and unsuccessful scenarios. | Medium |
+| FR-27 | The Payment Service SHOULD support a defined retry and dead-letter handling mechanism for events that cannot be processed successfully. | Medium |
+
+The final implementation must define the event structures, retry behavior, and mechanisms used to record payment outcomes.
+
+The system must ensure that event redelivery does not result in duplicate logical payment processing.
+
+The Payment Service is not required to integrate with external payment gateways or perform actual financial transactions.
+
+## 4.3 Inventory Processing
+
+### 4.3.1 Description and Priority
+
+**Priority: High**
+
+The Inventory Processing feature is responsible for managing inventory operations associated with orders whose simulated payments have been successfully approved.
+
+The Inventory Service operates as an independent microservice that consumes `PaymentApprovedEvent` messages from the `payment-approved` Apache Kafka topic.
+
+Upon receiving a valid event, the service identifies the ordered product and requested quantity, verifies the availability of sufficient stock, and performs the corresponding inventory update.
+
+When the inventory operation completes successfully, the Inventory Service publishes an `InventoryUpdatedEvent` to the `inventory-updated` Kafka topic, allowing the Notification Service to continue processing the order.
+
+If insufficient stock is available, the service must report an unsuccessful inventory outcome without publishing a successful inventory-update event.
+
+The service must also prevent duplicate event delivery from causing repeated stock deductions for the same logical order-processing operation.
+
+This feature has **High priority** because inventory processing is a required stage of the order-processing workflow and determines whether a successfully paid order can proceed to customer confirmation.
+
+### 4.3.2 Stimulus/Response Sequences
+
+**Scenario 1: Successful Inventory Processing**
+
+1. The Payment Service publishes a `PaymentApprovedEvent` to the `payment-approved` Kafka topic.
+2. The Inventory Service consumes the event.
+3. The service extracts the order identifier, product identifier, and requested quantity.
+4. The Inventory Service retrieves the current stock information for the requested product.
+5. The service verifies that sufficient inventory is available.
+6. The Inventory Service updates the available stock quantity.
+7. The service records the successful inventory operation.
+8. The Inventory Service publishes an `InventoryUpdatedEvent` to the `inventory-updated` Kafka topic.
+9. The Notification Service can consume the event and proceed with customer confirmation.
+
+**Scenario 2: Insufficient Stock**
+
+1. The Inventory Service receives a `PaymentApprovedEvent`.
+2. The service retrieves the current stock information.
+3. The available stock quantity is lower than the requested quantity.
+4. The Inventory Service rejects the inventory operation.
+5. The service records or publishes an inventory-failure outcome.
+6. No `InventoryUpdatedEvent` is published for the unsuccessful operation.
+7. The associated order must not be marked as successfully completed.
+8. The system initiates any required order cancellation or payment compensation according to the selected failure-handling design.
+
+The final compensation mechanism and failure-event structure remain to be determined.
+
+**Scenario 3: Duplicate Event Delivery**
+
+1. The Inventory Service receives a `PaymentApprovedEvent`.
+2. The service successfully processes the event and updates the inventory.
+3. The same logical event is delivered again.
+4. The Inventory Service identifies that the inventory operation has already been completed.
+5. The service prevents a second stock deduction.
+6. Any required event republication must preserve the original inventory-processing outcome.
+
+**Scenario 4: Temporary Inventory Processing Failure**
+
+1. The Inventory Service receives a `PaymentApprovedEvent`.
+2. A temporary technical problem prevents successful inventory processing.
+3. The service records the error in its logs.
+4. The event remains eligible for retry or recovery according to the configured processing mechanism.
+5. After the problem is resolved, processing resumes.
+6. If the event cannot be processed after the configured recovery attempts, it must be handled using the defined failure-management mechanism.
+
+The exact retry policy and dead-letter handling configuration remain to be determined.
+
+### 4.3.3 Functional Requirements
+
+| ID | Functional Requirement | Priority |
+|----|------------------------|----------|
+| FR-28 | The Inventory Service MUST consume `PaymentApprovedEvent` messages from the `payment-approved` Kafka topic. | High |
+| FR-29 | The Inventory Service MUST extract the order identifier, product identifier, and requested quantity from the received event or associated order information. | High |
+| FR-30 | The Inventory Service MUST maintain or access inventory information for products supported by the demonstration. | High |
+| FR-31 | The Inventory Service MUST verify that sufficient stock is available before approving an inventory operation. | High |
+| FR-32 | The Inventory Service MUST update the available stock quantity after a successful inventory operation. | High |
+| FR-33 | The Inventory Service MUST prevent the available stock quantity from becoming negative as a result of order processing. | High |
+| FR-34 | The Inventory Service MUST publish an `InventoryUpdatedEvent` to the `inventory-updated` Kafka topic following successful inventory processing. | High |
+| FR-35 | The Inventory Service MUST reject inventory operations when insufficient stock is available. | High |
+| FR-36 | The Inventory Service MUST NOT publish a successful inventory-update event for an unsuccessful inventory operation. | High |
+| FR-37 | The system MUST make unsuccessful inventory outcomes identifiable so that affected orders can be handled appropriately. | High |
+| FR-38 | The Inventory Service MUST prevent duplicate stock deductions when the same logical payment-approved event is processed more than once. | High |
+| FR-39 | The Inventory Service MUST handle concurrent inventory operations without allowing multiple orders to consume the same unavailable stock. | High |
+| FR-40 | The Inventory Service MUST handle temporary processing failures without silently discarding unprocessed events. | High |
+| FR-41 | The Inventory Service MUST log inventory-processing errors with sufficient information to identify the affected order. | High |
+| FR-42 | The system SHOULD support a defined compensation mechanism when inventory processing fails after payment approval. | Medium |
+| FR-43 | The Inventory Service SHOULD support configurable stock quantities for testing successful and unsuccessful inventory scenarios. | Medium |
+
+The final implementation must define the inventory data model, persistence mechanism, failure-event structures, and compensation strategy.
+
+The Inventory Service must ensure that event redelivery and concurrent order processing do not result in duplicate stock deductions or invalid inventory quantities.
+
+## 4.4 Customer Notification
+
+### 4.4.1 Description and Priority
+
+**Priority: High**
+
+The Customer Notification feature is responsible for generating simulated order confirmations after the successful completion of inventory processing.
+
+The Notification Service operates as an independent microservice that consumes `InventoryUpdatedEvent` messages from the `inventory-updated` Apache Kafka topic.
+
+Upon receiving a valid event, the service identifies the associated order and generates a confirmation indicating that the order has successfully completed the required payment and inventory-processing stages.
+
+Customer notifications are simulated for educational purposes. The system does not require integration with external email providers, SMS gateways, or commercial notification services.
+
+The Notification Service must operate asynchronously and must not block the initial order-creation request.
+
+The service must also account for duplicate event delivery and temporary processing failures.
+
+This feature has **High priority** because it represents the final stage of the successful order-processing workflow and demonstrates asynchronous communication between independently deployed microservices.
+
+### 4.4.2 Stimulus/Response Sequences
+
+**Scenario 1: Successful Customer Notification**
+
+1. The Inventory Service successfully processes an inventory operation.
+2. The Inventory Service publishes an `InventoryUpdatedEvent` to the `inventory-updated` Kafka topic.
+3. The Notification Service consumes the event.
+4. The Notification Service extracts the order identifier and any additional information required to generate a confirmation.
+5. The service generates a simulated order confirmation.
+6. The confirmation is recorded in the application logs or another configured notification record.
+7. The notification-processing operation is considered successfully completed.
+
+**Scenario 2: Duplicate Notification Event**
+
+1. The Notification Service receives an `InventoryUpdatedEvent`.
+2. The service processes the event and generates a confirmation for the associated order.
+3. The same logical event is delivered again.
+4. The Notification Service identifies that the corresponding notification has already been processed.
+5. The service prevents the creation of an additional logical confirmation for the same event.
+6. The previously completed notification outcome is preserved.
+
+**Scenario 3: Temporary Notification Processing Failure**
+
+1. The Notification Service receives an `InventoryUpdatedEvent`.
+2. A temporary technical problem prevents successful notification processing.
+3. The service records the error in its logs.
+4. The event remains eligible for retry or recovery according to the configured processing mechanism.
+5. After the problem is resolved, the Notification Service resumes processing.
+6. The service generates the confirmation when the event is successfully processed.
+7. Events that cannot be processed after the configured recovery attempts are handled through the selected failure-management mechanism.
+
+**Scenario 4: Notification Service Unavailability**
+
+1. The Notification Service becomes temporarily unavailable.
+2. The Order, Payment, and Inventory services continue operating independently, provided their own dependencies remain available.
+3. The Inventory Service continues publishing successful inventory-update events to Apache Kafka.
+4. Kafka retains the published events according to its configured retention policy.
+5. When the Notification Service becomes available again, it resumes consuming eligible unprocessed events.
+6. The service generates the corresponding simulated confirmations.
+
+### 4.4.3 Functional Requirements
+
+| ID | Functional Requirement | Priority |
+|----|------------------------|----------|
+| FR-44 | The Notification Service MUST consume `InventoryUpdatedEvent` messages from the `inventory-updated` Kafka topic. | High |
+| FR-45 | The Notification Service MUST extract the order identifier from each valid inventory-update event. | High |
+| FR-46 | The Notification Service MUST generate a simulated confirmation following successful inventory processing. | High |
+|
+
+
+## 4.5 Order Status Tracking
+
+### 4.5.1 Description and Priority
+
+**Priority: Medium**
+
+The Order Status Tracking feature allows clients to retrieve information about the current processing state of an order.
+
+Because the Event-Driven Order Processing System performs payment, inventory, and notification operations asynchronously, an order may pass through several processing stages after its initial creation.
+
+The system must therefore distinguish between an order that has been accepted and an order that has completed the required processing stages.
+
+The proposed implementation will maintain order-processing states and expose an HTTP endpoint through which clients can retrieve the latest recorded status of an order.
+
+The feature will also support the identification of orders whose processing has failed or been cancelled.
+
+This feature has **Medium priority** because it improves system observability and usability but is not required for the basic event-processing demonstration provided by the reference implementation.
+
+### 4.5.2 Stimulus/Response Sequences
+
+**Scenario 1: Order Status Initialization**
+
+1. A client submits a valid order through the Order Service.
+2. The Order Service creates an order record and assigns a unique identifier.
+3. The system assigns the order an initial `PENDING` status.
+4. The Order Service initiates asynchronous processing.
+5. The client receives an acknowledgement containing the order identifier and initial status.
+
+**Scenario 2: Successful Order Processing**
+
+1. An order is created with a `PENDING` status.
+2. The Payment Service successfully processes the simulated payment.
+3. The system records the successful payment outcome.
+4. The Inventory Service successfully processes the inventory operation.
+5. The system records the successful inventory outcome.
+6. The order transitions to `CONFIRMED` once the required payment and inventory operations have completed.
+7. The Notification Service generates a simulated customer confirmation independently.
+
+**Scenario 3: Unsuccessful Order Processing**
+
+1. An order is accepted and assigned a `PENDING` status.
+2. A downstream service reports an unsuccessful business operation.
+3. The system identifies the associated order.
+4. The order is updated to an appropriate failure or cancellation state.
+5. The failed order must not be represented as successfully confirmed.
+6. Any required compensation actions are handled according to the selected failure-management design.
+
+**Scenario 4: Retrieving Order Status**
+
+1. A client sends an HTTP `GET` request to `/orders/{orderId}`.
+2. The Order Service receives the request.
+3. The service retrieves the latest recorded information for the specified order.
+4. If the order exists, the system returns its identifier and current processing status.
+5. If the order does not exist, the system returns an appropriate not-found response.
+
+**Scenario 5: Delayed Status Update**
+
+1. A downstream microservice successfully completes a processing operation.
+2. The corresponding outcome is communicated asynchronously.
+3. The order-status component has not yet processed the update.
+4. A client requests the order status and receives the latest previously recorded state.
+5. Once the relevant update is processed, subsequent requests reflect the newer state.
+
+This behavior reflects the eventual consistency of the distributed system.
+
+### 4.5.3 Functional Requirements
+
+| ID | Functional Requirement | Priority |
+|----|------------------------|----------|
+| FR-56 | The system SHOULD maintain a processing status for each accepted order. | Medium |
+| FR-57 | The system SHOULD assign an initial `PENDING` status to newly created orders. | Medium |
+| FR-58 | The system SHOULD update an order's status when relevant processing stages complete successfully. | Medium |
+| FR-59 | The system SHOULD distinguish orders awaiting processing from orders that have successfully completed payment and inventory operations. | Medium |
+| FR-60 | The system SHOULD support a `CONFIRMED` status for orders whose required payment and inventory operations have completed successfully. | Medium |
+| FR-61 | The system SHOULD represent unsuccessful order processing using an appropriate failure or cancellation status. | Medium |
+| FR-62 | The system SHOULD provide an HTTP `GET /orders/{orderId}` endpoint for retrieving the status of an existing order. | Medium |
+| FR-63 | The order-status response SHOULD include the unique order identifier and latest recorded processing status. | Medium |
+| FR-64 | The system SHOULD return an appropriate not-found response when the requested order does not exist. | Medium |
+| FR-65 | The system SHOULD associate asynchronous processing updates with the correct order identifier. | Medium |
+| FR-66 | The system SHOULD prevent delayed or duplicate events from incorrectly reversing a completed or terminal order state. | Medium |
+| FR-67 | The system SHOULD allow clients to retrieve the latest recorded order status without waiting for unfinished downstream operations. | Medium |
+
+The final implementation must define the complete set of supported order statuses, allowed state transitions, and the mechanism used to propagate status updates between microservices.
+
+The proposed order-status interface must not require direct synchronous requests to downstream business services during normal status retrieval.
+
+## 4.6 Error Handling and Recovery
+
+### 4.6.1 Description and Priority
+
+**Priority: High**
+
+The Error Handling and Recovery feature is responsible for ensuring that temporary failures in individual microservices or supporting infrastructure do not unnecessarily disrupt the entire order-processing workflow.
+
+Because the Event-Driven Order Processing System uses asynchronous communication through Apache Kafka, individual processing stages may experience failures independently.
+
+The system must distinguish between unsuccessful business operations, such as rejected payments or insufficient inventory, and technical failures, such as unavailable services, database connection errors, or message-processing exceptions.
+
+The system must provide mechanisms for detecting processing failures, recording relevant diagnostic information, and recovering unprocessed events when possible.
+
+The design must also account for duplicate event delivery and prevent repeated processing from causing unintended business effects.
+
+This feature has **High priority** because fault isolation and reliability are important quality attributes of the selected Microservices and Event-Driven Architecture.
+
+### 4.6.2 Stimulus/Response Sequences
+
+**Scenario 1: Temporary Consumer Service Unavailability**
+
+1. A microservice that consumes Kafka events becomes temporarily unavailable.
+2. Other operational microservices continue performing their assigned responsibilities.
+3. Event producers continue publishing messages while the Kafka broker remains available.
+4. Kafka retains published events according to its configured retention policy.
+5. The unavailable microservice is restored.
+6. The consumer resumes processing eligible events that have not been successfully completed.
+7. The system records the processing outcomes.
+
+**Scenario 2: Temporary Event-Processing Failure**
+
+1. A microservice receives an event from Apache Kafka.
+2. A temporary technical error prevents successful processing.
+3. The service records diagnostic information about the failure.
+4. The event is handled according to the configured retry mechanism.
+5. If the temporary problem is resolved, the service completes processing.
+6. If processing continues to fail, the event is handled through a defined failure-management procedure.
+
+The exact retry limits, retry intervals, and handling of permanently unsuccessful events remain to be determined.
+
+**Scenario 3: Duplicate Event Delivery**
+
+1. A microservice receives and successfully processes an event.
+2. The same logical event is delivered again.
+3. The consumer identifies that the associated business operation has already been completed.
+4. The service prevents duplicate business effects.
+5. The consumer handles the repeated event without corrupting application state.
+
+**Scenario 4: Apache Kafka Unavailability**
+
+1. Apache Kafka becomes temporarily unavailable.
+2. A microservice attempts to publish or consume an event.
+3. The communication operation fails or becomes temporarily blocked.
+4. The affected service records the communication failure.
+5. The system does not falsely report successful event publication when the broker has not acknowledged the event.
+6. When Kafka becomes available again, the system attempts to recover pending operations according to the selected reliability mechanism.
+
+The exact mechanism for preserving events that cannot be published immediately remains to be determined.
+
+**Scenario 5: Unrecoverable Event-Processing Failure**
+
+1. A consumer receives an event that cannot be processed successfully.
+2. The service attempts recovery according to the configured failure-handling policy.
+3. Processing remains unsuccessful after the permitted attempts.
+4. The event is identified as requiring further investigation.
+5. The system records sufficient information to diagnose the problem.
+6. The event may be transferred to a dead-letter topic or handled through another defined recovery mechanism.
+7. The failure does not silently disappear from the system.
+
+**Scenario 6: Database Unavailability**
+
+1. A service attempts to access its database.
+2. The database is temporarily unavailable.
+3. The service detects the failed operation.
+4. The service records the error and avoids reporting an unsuccessful database operation as completed.
+5. The operation is retried or recovered according to the selected persistence and failure-handling strategy.
+6. Normal processing resumes when the database becomes available.
+
+### 4.6.3 Functional Requirements
+
+| ID | Functional Requirement | Priority |
+|----|------------------------|----------|
+| FR-68 | The system MUST detect and report technical errors that prevent successful processing of business events. | High |
+| FR-69 | Individual microservices MUST handle processing failures without intentionally terminating unrelated services. | High |
+| FR-70 | The system MUST allow operational services to continue processing independent operations when another consumer service is unavailable, provided their required dependencies remain available. | High |
+| FR-71 | Event consumers MUST NOT acknowledge a failed operation as successfully completed unless the event has been safely transferred to a defined recovery mechanism. | High |
+| FR-72 | The system MUST provide a mechanism for recovering eligible events following temporary consumer unavailability. | High |
+| FR-73 | The system MUST prevent duplicate logical business operations caused by event redelivery. | High |
+| FR-74 | Microservices MUST record processing errors with sufficient information to identify the affected event or order. | High |
+| FR-75 | The system MUST distinguish unsuccessful business outcomes from technical processing failures. | High |
+| FR-76 | The system MUST NOT report successful event publication when the message broker has not confirmed acceptance of the event. | High |
+| FR-77 | The system MUST define how accepted orders are recovered when event publication is interrupted. | High |
+| FR-78 | Database-dependent services MUST detect and appropriately report failed database operations. | High |
+| FR-79 | The system MUST provide an identifiable failure outcome for events that cannot be processed successfully. | High |
+| FR-80 | The system SHOULD support configurable retry limits and retry intervals for temporary processing failures. | Medium |
+| FR-81 | The system SHOULD support dead-letter topics or an equivalent mechanism for isolating events that repeatedly fail processing. | Medium |
+| FR-82 | The system SHOULD support controlled recovery of failed events after the underlying problem has been resolved. | Medium |
+| FR-83 | The system SHOULD expose sufficient operational information to support investigation of processing failures. | Medium |
+
+The final implementation must define the retry policy, message acknowledgement behavior, failure classification, and recovery mechanisms used by each microservice.
+
+The specific approach for reliable event publication, including whether a Transactional Outbox pattern is required, remains to be determined.
+
+### 4.6.4 Failure Recovery Considerations
+
+The system must account for the fact that Apache Kafka and microservice processing do not automatically guarantee exactly-once execution of business operations.
+
+Consumer implementations must therefore support idempotent handling of repeated events.
+
+The system must also account for the possibility that a service successfully performs a database operation but fails before confirming completion of the corresponding Kafka message.
+
+Recovery mechanisms must preserve business consistency and avoid incorrectly marking unsuccessful processing operations as completed.
+
+The detailed implementation of these mechanisms will be documented in the architecture design and corresponding Architecture Decision Records.
+
+## 4.7 Containerization and Kubernetes Deployment
+
+### 4.7.1 Description and Priority
+
+**Priority: High**
+
+The Containerization and Kubernetes Deployment feature is responsible for enabling the Event-Driven Order Processing System to operate within a containerized environment hosted on a virtual machine.
+
+Each application microservice must be packaged as an independently deployable container image using Docker-compatible container technology.
+
+The completed application must be deployed and managed using Kubernetes, which provides workload orchestration, service discovery, container lifecycle management, and configurable scaling.
+
+The deployment environment must include the four application microservices, Apache Kafka, and the database components required by the selected persistence strategy.
+
+The system must support independent deployment and restarting of application services without requiring the entire application to be redeployed.
+
+This feature has **High priority** because Kubernetes deployment is a mandatory deliverable of the Advanced Software Architecture Patterns project and demonstrates the operational independence of microservices.
+
+### 4.7.2 Stimulus/Response Sequences
+
+**Scenario 1: Container Image Creation**
+
+1. A developer obtains the application source code.
+2. The developer builds the individual microservice applications.
+3. Docker is used to create a container image for each microservice.
+4. Each image contains the application and its required runtime dependencies.
+5. The images are tagged and made available to the deployment environment.
+6. The images can be used to create application containers.
+
+**Scenario 2: Application Deployment**
+
+1. The system operator prepares the virtual machine and Kubernetes environment.
+2. The operator applies the required Kubernetes configuration.
+3. Kubernetes creates the application workloads and supporting networking resources.
+4. The required Kafka and database services become available.
+5. The application microservices establish connections to their required dependencies.
+6. Kubernetes reports the application workloads as ready when they can perform their intended operations.
+7. The operator submits a test order through the Order Service API.
+8. The system processes the order through the event-driven workflow.
+
+**Scenario 3: Microservice Restart**
+
+1. An application container terminates unexpectedly.
+2. Kubernetes detects the terminated container.
+3. Kubernetes restarts the container according to the configured workload policy.
+4. The restarted application reconnects to its required dependencies.
+5. The service resumes its assigned operations.
+6. Other independently operating services remain available, provided their required dependencies are functioning.
+
+**Scenario 4: Independent Service Scaling**
+
+1. The operator identifies an application microservice that requires additional processing capacity.
+2. The operator changes the requested replica count for the selected Kubernetes workload.
+3. Kubernetes creates additional instances of the selected microservice.
+4. The new instances connect to the required infrastructure components.
+5. Kafka consumer instances participate in event processing according to their consumer-group and topic-partition configuration.
+6. Other microservices retain their existing replica configuration.
+
+**Scenario 5: Deployment Configuration Change**
+
+1. The operator updates an environment-specific configuration value.
+2. The updated configuration is applied through the Kubernetes deployment mechanism.
+3. Affected workloads are restarted or updated when necessary.
+4. The application uses the new configuration without requiring changes to its core business logic.
+
+### 4.7.3 Functional Requirements
+
+| ID | Functional Requirement | Priority |
+|----|------------------------|----------|
+| FR-84 | Each application microservice MUST provide a reproducible process for building a container image. | High |
+| FR-85 | Each microservice MUST be deployable independently of the other application microservices. | High |
+| FR-86 | The system MUST provide Kubernetes configuration for deploying the four application microservices. | High |
+| FR-87 | The Kubernetes environment MUST provide access to the Apache Kafka infrastructure required for event communication. | High |
+| FR-88 | Database-dependent services MUST be configurable to connect to the selected database infrastructure. | High |
+| FR-89 | The deployment MUST provide internal networking and service discovery for the required application components. | High |
+| FR-90 | The Order Service MUST be accessible through a documented HTTP access method. | High |
+| FR-91 | Application configuration MUST support environment-specific values without requiring source-code modifications. | High |
+| FR-92 | Kubernetes workloads MUST support restarting application containers following unexpected termination. | High |
+| FR-93 | The deployment MUST provide a mechanism for checking application readiness and operational health. | High |
+| FR-94 | Application logs MUST be accessible through the deployment environment. | High |
+| FR-95 | The system MUST support independent changes to the replica count of appropriately designed application microservices. | High |
+| FR-96 | The deployment MUST be reproducible using documented configuration files and instructions. | High |
+| FR-97 | The application MUST operate within the available computing resources of the selected virtual machine. | High |
+| FR-98 | The deployment SHOULD support controlled application updates without requiring simultaneous replacement of all microservices. | Medium |
+| FR-99 | The deployment SHOULD support recovery of persistent application data following application-container restarts. | Medium |
+| FR-100 | The system SHOULD provide documented procedures for diagnosing deployment failures and restarting affected workloads. | Medium |
+
+The final implementation must define the Kubernetes distribution, deployment configuration, storage strategy, and resource requirements.
+
+The deployment must demonstrate that the application components can be operated independently while maintaining the required event-driven communication mechanisms.
 
 # 5. Other Nonfunctional Requirements
 
