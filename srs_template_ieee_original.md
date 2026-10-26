@@ -2435,8 +2435,317 @@ The terms defined in this glossary are used consistently throughout the SRS and 
 
 # Appendix B: Analysis Models
 
-&lt;Optionally, include any pertinent analysis models, such as data flow diagrams, class diagrams, state-transition diagrams, or entity-relationship diagrams.&gt;
+This appendix presents the analysis models used to describe the structure,
+behavior, and deployment of the Event-Driven Order Processing System.
+
+The models explain the relationships between the microservices, the
+asynchronous order-processing workflow, the proposed order states,
+and the target Kubernetes deployment environment.
+
+The following analysis models are included:
+
+1. System Architecture Model
+2. Order Processing Sequence Model
+3. Order State Transition Model
+4. Kubernetes Deployment Model
+
+These models represent the intended system architecture. Components
+or behaviors that are not yet implemented in the reference repository
+are identified as proposed extensions.
+
+---
+
+## B.1 System Architecture Model
+
+The Event-Driven Order Processing System follows a combination of
+Microservices Architecture and Event-Driven Architecture.
+
+The application consists of four primary business microservices
+that communicate asynchronously through Apache Kafka.
+
+### Main System Components
+
+| Component | Responsibility |
+|-----------|----------------|
+| Order Service | Receives, validates, and stores customer orders. Publishes order-created events. |
+| Payment Service | Consumes order-created events and performs simulated payment processing. |
+| Inventory Service | Consumes approved-payment events and processes inventory operations. |
+| Notification Service | Consumes successful inventory-update events and generates simulated customer confirmations. |
+| Apache Kafka | Provides asynchronous event communication between microservices. |
+| Order Database | Stores order information and associated processing states. |
+| API Client | Submits orders and retrieves order information through the HTTP API. |
+
+### Component Communication
+
+The system uses the following communication relationships:
+
+| Source | Destination | Communication | Purpose |
+|--------|-------------|---------------|---------|
+| API Client | Order Service | HTTP POST | Submit new orders |
+| Order Service | Order Database | Database operations | Store and retrieve order information |
+| Order Service | Apache Kafka | Event publication | Publish OrderCreatedEvent |
+| Apache Kafka | Payment Service | Event consumption | Deliver order-created events |
+| Payment Service | Apache Kafka | Event publication | Publish PaymentApprovedEvent |
+| Apache Kafka | Inventory Service | Event consumption | Deliver payment-approved events |
+| Inventory Service | Apache Kafka | Event publication | Publish InventoryUpdatedEvent |
+| Apache Kafka | Notification Service | Event consumption | Deliver inventory-updated events |
+
+The main order-processing workflow does not require direct
+synchronous communication between business microservices.
+
+Instead, Apache Kafka acts as the intermediary through which
+events are exchanged.
+
+Each service is responsible for its own business operations
+and can be developed, maintained, and deployed independently.
+
+---
+
+## B.2 Order Processing Sequence Model
+
+This model describes the chronological sequence of interactions
+involved in successfully processing an order.
+
+The workflow begins when an API client submits an order
+and continues asynchronously through the Payment, Inventory,
+and Notification services.
+
+### Successful Order Processing Sequence
+
+| Step | Component | Action |
+|------|-----------|--------|
+| 1 | API Client | Sends an HTTP POST request to `/orders`. |
+| 2 | Order Service | Receives and validates the order information. |
+| 3 | Order Service | Generates a unique order identifier. |
+| 4 | Order Service | Stores the order in the database. |
+| 5 | Order Service | Initiates publication of an OrderCreatedEvent to Kafka. |
+| 6 | Apache Kafka | Accepts the event and makes it available on the `order-created` topic. |
+| 7 | Order Service | Acknowledges the accepted order without waiting for downstream processing. |
+| 8 | Payment Service | Consumes the OrderCreatedEvent. |
+| 9 | Payment Service | Performs simulated payment processing. |
+| 10 | Payment Service | Publishes PaymentApprovedEvent after successful payment. |
+| 11 | Inventory Service | Consumes the PaymentApprovedEvent. |
+| 12 | Inventory Service | Performs the inventory operation. |
+| 13 | Inventory Service | Publishes InventoryUpdatedEvent after successful inventory processing. |
+| 14 | Notification Service | Consumes the InventoryUpdatedEvent. |
+| 15 | Notification Service | Generates and records a simulated order confirmation. |
+
+### Asynchronous Processing Behavior
+
+The Order Service acknowledges an accepted order without
+waiting for payment, inventory, and notification processing
+to complete.
+
+Downstream services process the events independently as
+they become available.
+
+This communication approach reduces direct dependencies
+between the business services and supports asynchronous
+order processing.
+
+The mechanism used to reliably coordinate order persistence
+and event publication remains to be determined.
+
+---
+
+## B.3 Order State Transition Model
+
+The Order State Transition Model describes the proposed
+processing states of an order and the conditions that
+trigger transitions between them.
+
+Order status tracking is a proposed extension of the
+original reference implementation.
+
+### Proposed Order States
+
+| State | Description |
+|-------|-------------|
+| PENDING | The order has been accepted and is awaiting downstream processing. |
+| PAYMENT_APPROVED | The simulated payment has been successfully approved. |
+| CONFIRMED | The required payment and inventory operations have completed successfully. |
+| FAILED | The order cannot continue because a required business operation was unsuccessful. |
+| CANCELLATION_PENDING | An unsuccessful operation requires cancellation or compensation. |
+| CANCELLED | The required cancellation or compensation process has completed. |
+
+### State Transitions
+
+| Current State | Trigger | Next State |
+|---------------|---------|------------|
+| New Order | Valid order accepted | PENDING |
+| PENDING | Payment approved | PAYMENT_APPROVED |
+| PENDING | Payment rejected | FAILED |
+| PAYMENT_APPROVED | Inventory processing successful | CONFIRMED |
+| PAYMENT_APPROVED | Inventory processing failed | CANCELLATION_PENDING |
+| CANCELLATION_PENDING | Required compensation completed | CANCELLED |
+
+### State Transition Rules
+
+The following rules apply:
+
+1. Every accepted order begins in the PENDING state.
+2. An order may proceed to inventory processing only after payment approval.
+3. An order may become CONFIRMED only after successful payment and inventory processing.
+4. Payment rejection must prevent the order from entering the successful processing path.
+5. Inventory failure after payment approval may require a compensation operation.
+6. Repeated or delayed events must not incorrectly reverse completed order states.
+7. Customer notification is handled asynchronously and does not determine whether payment and inventory processing succeeded.
+
+The final set of supported states and the compensation
+workflow will be confirmed during implementation design.
+
+---
+
+## B.4 Kubernetes Deployment Model
+
+The Kubernetes Deployment Model describes the intended
+deployment environment for the completed application.
+
+The system will be deployed within a Kubernetes cluster
+hosted on a virtual machine.
+
+Each application microservice will be packaged as a
+container image and deployed as an independently
+managed Kubernetes workload.
+
+### Deployment Components
+
+| Component | Deployment Role |
+|-----------|-----------------|
+| Virtual Machine | Provides computing resources for the application environment. |
+| Kubernetes Cluster | Orchestrates application workloads and supporting infrastructure. |
+| Order Service | Independently deployed application workload exposing the order API. |
+| Payment Service | Independently deployed application workload consuming order-created events. |
+| Inventory Service | Independently deployed application workload processing inventory operations. |
+| Notification Service | Independently deployed application workload generating confirmations. |
+| Apache Kafka | Provides asynchronous messaging infrastructure. |
+| Database | Provides storage for application data. |
+| Kubernetes Services | Provide stable network access to the required application components. |
+| ConfigMaps and Secrets | Provide environment-specific application configuration. |
+| Persistent Storage | Preserves required stateful application data according to the selected storage strategy. |
+
+### Deployment Requirements
+
+The deployment environment must support:
+
+1. Independent deployment of the four application microservices.
+2. Internal network communication between application components.
+3. Connectivity to the Apache Kafka infrastructure.
+4. Access to the configured database.
+5. A documented method for external clients to access the Order Service API.
+6. Restarting failed application containers.
+7. Independent scaling of appropriately designed microservices.
+8. Application configuration through Kubernetes-supported mechanisms.
+9. Access to application logs and operational information.
+10. Persistent storage for components that require data preservation.
+
+### Deployment Considerations
+
+The exact Kubernetes distribution, virtual machine specifications,
+database technology, and storage configuration remain to be determined.
+
+The final deployment must operate within the available hardware
+resources of the virtual machine.
+
+The deployment will be evaluated through successful order processing,
+controlled service failures, recovery tests, and selected scaling
+experiments.
+
+---
+
+## B.5 Model Limitations and Future Refinement
+
+The analysis models describe the planned behavior and architecture
+of the Event-Driven Order Processing System.
+
+Some features extend beyond the original reference implementation,
+including:
+
+- Persistent inventory management.
+- Simulated payment rejection.
+- Order status tracking.
+- Compensation for unsuccessful inventory operations.
+- Idempotent event processing.
+- Advanced failure recovery.
+- Kubernetes deployment.
+
+The corresponding models will be updated as these features
+are implemented and architectural decisions are finalized.
+
+Additional diagrams, such as UML sequence diagrams, deployment
+diagrams, or entity-relationship diagrams, may be included in
+the final technical report when their implementation details
+are available.
 
 # Appendix C: To Be Determined List
 
-&lt;Collect a numbered list of the TBD (to be determined) references that remain in the SRS so they can be tracked to closure.&gt;
+This appendix identifies the unresolved technical, architectural, and implementation decisions associated with the Event-Driven Order Processing System.
+
+These items require further evaluation or confirmation before the relevant system components can be fully implemented and verified.
+
+Each item is assigned a unique identifier to support tracking throughout the project lifecycle.
+
+## C.1 Unresolved Requirements and Decisions
+
+| ID | Item to Be Determined | Description | Related SRS Sections | Priority | Status |
+|----|-----------------------|-------------|----------------------|----------|--------|
+| TBD-01 | Database Technology | Determine whether to retain H2 or adopt a persistent database such as PostgreSQL. | 2.4, 3.3, 6.1 | High | Open |
+| TBD-02 | Database Ownership | Define which microservices require persistent storage and how data ownership will be organized. | 2.5, 3.3, 6.1 | High | Open |
+| TBD-03 | Order Status Management | Finalize the mechanism for maintaining and updating order-processing states across microservices. | 4.5 | High | Open |
+| TBD-04 | Event Message Schemas | Define the exact fields and data types used by Kafka events. | 3.3, 3.4, 6.2 | High | Open |
+| TBD-05 | Payment Failure Events | Define how unsuccessful simulated payments are communicated to other services. | 4.2, 4.5 | High | Open |
+| TBD-06 | Inventory Failure Events | Define how insufficient stock and unsuccessful inventory operations are represented. | 4.3, 4.5 | High | Open |
+| TBD-07 | Compensation Strategy | Determine whether to implement a Saga-based compensation workflow for failed orders. | 4.2, 4.3, 5.5 | Medium | Open |
+| TBD-08 | Reliable Event Publication | Select a mechanism for handling failures between database persistence and Kafka event publication. | 4.1, 4.6 | High | Open |
+| TBD-09 | Idempotency Mechanism | Define how services detect previously processed events and prevent duplicate business operations. | 4.2, 4.3, 4.4, 4.6 | High | Open |
+| TBD-10 | Kafka Retry Policy | Determine retry limits, retry intervals, and handling of temporary processing failures. | 4.6 | High | Open |
+| TBD-11 | Dead-Letter Handling | Determine whether dead-letter topics will be implemented and how failed events will be recovered. | 4.6 | Medium | Open |
+| TBD-12 | Kafka Topic Configuration | Define topic partitions, replication settings, retention policies, and consumer groups. | 3.4, 5.4 | High | Open |
+| TBD-13 | Kubernetes Distribution | Confirm the Kubernetes operating environment required for deployment. | 2.4, 4.7 | High | Open |
+| TBD-14 | Virtual Machine Specifications | Confirm available CPU, memory, storage, and network resources. | 2.4, 4.7, 5.1 | High | Open |
+| TBD-15 | Kubernetes Networking | Select the method used to expose the Order Service API and configure internal service communication. | 3.4, 4.7 | High | Open |
+| TBD-16 | Persistent Storage Configuration | Define how Kafka and database state will be preserved where required. | 4.7, 6.4 | High | Open |
+| TBD-17 | API Response Contracts | Finalize HTTP status codes, JSON response structures, and validation error formats. | 3.1, 3.3, 4.1, 4.5 | Medium | Open |
+| TBD-18 | Performance Thresholds | Validate proposed response-time, throughput, and processing-latency targets against the available VM resources. | 5.1 | Medium | Open |
+| TBD-19 | Authentication and API Access | Determine the access-control requirements based on whether the deployed API is privately or publicly accessible. | 3.4, 5.3 | Medium | Open |
+| TBD-20 | Deployment Automation | Determine whether the project will include automated build and deployment pipelines. | 2.6, 4.7 | Low | Open |
+| TBD-21 | Notification Persistence | Determine whether simulated notification outcomes will be stored or recorded only in application logs. | 4.4 | Medium | Open |
+| TBD-22 | Architecture Evaluation | Finalize the experiments and metrics used to evaluate responsiveness, fault isolation, scalability, and modifiability. | 5.1, 5.4 | High | Open |
+| TBD-23 | Reference Repository Licensing | Verify the license and redistribution permissions associated with the original GitHub implementation. | 1.5, 6.5 | High | Open |
+| TBD-24 | Project Team Responsibilities | Confirm responsibility for implementation, deployment, documentation, and testing. | 2.6, 6.8 | Medium | Open |
+
+## C.2 Decision Priorities
+
+Unresolved items are classified using the priority levels defined in Section 1.2.
+
+- **High:** Decisions that directly affect the system architecture, core functionality, data integrity, or mandatory deployment requirements.
+- **Medium:** Decisions that improve reliability, usability, or maintainability but do not necessarily prevent initial implementation.
+- **Low:** Optional enhancements that may be postponed if project time or resources are limited.
+
+High-priority decisions should be addressed before implementing the components that depend on them.
+
+## C.3 Decision Tracking
+
+Each TBD item may have one of the following statuses:
+
+| Status | Description |
+|--------|-------------|
+| Open | The decision has not yet been made. |
+| In Progress | Alternatives are currently being evaluated. |
+| Resolved | A decision has been made and documented. |
+| Deferred | The decision has been intentionally postponed to a later project phase. |
+| Not Applicable | The item is no longer relevant to the agreed project scope. |
+
+When a decision is resolved, the corresponding sections of the SRS must be updated to reflect the selected approach.
+
+Architecturally significant decisions should also be documented using Architecture Decision Records (ADRs), including their context, rationale, alternatives, and consequences.
+
+## C.4 Decision Management
+
+The project team will review unresolved decisions throughout the implementation and deployment phases.
+
+Decisions affecting the system's core architecture, event communication, data consistency, or deployment infrastructure will be prioritized.
+
+The SRS and supporting architecture documentation will be updated when decisions are finalized.
+
+Items that remain unresolved at the end of the project will be identified in the final technical report, together with their impact on the implementation and any recommended future improvements.
