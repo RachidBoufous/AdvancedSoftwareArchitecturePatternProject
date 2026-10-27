@@ -95,7 +95,7 @@ PENDING → PAYMENT_APPROVED → CONFIRMED
 |------|------|
 | Elfadel Mohamed | Software Architect |
 | Rachid Boufous | Software Architect |
-| Chedy Medo | Software Architect |
+| Chedy | Software Architect |
 
 ## License
 
