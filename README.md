@@ -86,7 +86,7 @@ PENDING → PAYMENT_APPROVED → CONFIRMED
 
 ## Documentation
 
-- [Software Requirements Specification (SRS)](srs-and-adr/SRS.md) — full system requirements following the IEEE/Wiegers template
+- [Software Requirements Specification (SRS)](srs-and-adr/SRS_IEEE.md) — full system requirements following the IEEE/Wiegers template
 - [Architecture Decision Records](srs-and-adr/docs/adr/) — eight ADRs documenting every major design choice
 
 ## Team
